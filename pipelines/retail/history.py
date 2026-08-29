@@ -1,7 +1,6 @@
-# ruff: noqa: F821
+# ruff: noqa: F821, I001
 
 from pyspark import pipelines as dp
-
 from pyspark.sql import functions as F
 
 
