@@ -33,7 +33,9 @@ def add_reference_validity(
     customer_keys = (
         customers.select("customer_id").distinct().withColumn("_known_customer", F.lit(True))
     )
-    product_keys = products.select("product_id").distinct().withColumn("_known_product", F.lit(True))
+    product_keys = (
+        products.select("product_id").distinct().withColumn("_known_product", F.lit(True))
+    )
     return (
         orders.join(customer_keys, "customer_id", "left")
         .join(product_keys, "product_id", "left")

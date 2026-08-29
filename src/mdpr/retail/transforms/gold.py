@@ -19,6 +19,4 @@ def customer_360(customers: DataFrame, orders: DataFrame) -> DataFrame:
         F.countDistinct("order_id").alias("orders"),
         F.sum(F.col("quantity") * F.col("unit_price")).alias("lifetime_value"),
     )
-    return customers.join(metrics, "customer_id", "left").fillna(
-        {"orders": 0, "lifetime_value": 0}
-    )
+    return customers.join(metrics, "customer_id", "left").fillna({"orders": 0, "lifetime_value": 0})
