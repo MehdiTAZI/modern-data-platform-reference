@@ -1,0 +1,4 @@
+workspace_host = "https://adb-0000000000000000.0.azuredatabricks.net"
+environment = "dev"
+storage_account_name = "mdprdevlake001"
+access_connector_id = "/subscriptions/.../providers/Microsoft.Databricks/accessConnectors/mdpr-dev-dbc"

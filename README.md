@@ -1,135 +1,189 @@
 # Modern Data Platform Reference Architecture
 
-A production-oriented reference implementation of a modern enterprise data platform built around **Databricks, Delta Lake, Unity Catalog, Terraform, PySpark, SQL, batch and streaming workloads**.
+[![CI](https://github.com/MehdiTAZI/modern-data-platform-reference/actions/workflows/ci.yml/badge.svg)](https://github.com/MehdiTAZI/modern-data-platform-reference/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-The goal is not to provide isolated code snippets. The repository demonstrates how architecture decisions, platform engineering, data engineering, governance, security, testing, observability and CI/CD fit together in one coherent platform.
+A production-oriented, architecture-first reference for designing and engineering a modern enterprise **Databricks Lakehouse** on Azure. It demonstrates platform infrastructure, Unity Catalog governance, batch and streaming data products, contract-driven quality, testing, CI/CD, observability, FinOps, recovery and the architectural decisions behind those patterns.
 
-> **Reference implementation:** Azure + Databricks is used for the first implementation. The architecture deliberately separates cloud-specific infrastructure from Databricks and application concerns so AWS/GCP implementations can be added later.
+The repository deliberately implements **one deep retail/e-commerce vertical slice** instead of collecting unrelated snippets.
 
-## What this repository demonstrates
+> **Deployment status:** all source, static validation and local test paths are designed to be reproducible without cloud credentials. Azure/Databricks apply/deploy is isolated in a gated workflow and requires your own subscription/workspace identities. Reference NFRs are design targets, not unmeasured performance claims.
 
-| Capability | Coverage |
+## Capability map
+
+| Capability | Reference implementation |
 |---|---|
-| Infrastructure as Code | Terraform modules and environment composition |
-| Lakehouse | Delta Lake + Medallion architecture |
-| Governance | Unity Catalog ownership, isolation and access model |
-| Batch processing | Incremental ingestion and Bronze → Silver → Gold |
-| Real-time processing | Structured Streaming ingestion and transformations |
-| Data quality | Expectations, validation patterns and quarantine strategy |
-| Data engineering | PySpark + SQL application patterns |
-| CI/CD | GitHub Actions + Terraform + Databricks Bundles |
-| Architecture | HLD, data flows, standards and ADRs |
-| Operations | Observability, FinOps and operational principles |
+| Cloud foundation | Azure Resource Group, ADLS Gen2, VNet injection, NSG, NAT Gateway, Databricks Premium workspace |
+| Identity | Azure Databricks Access Connector managed identity + account-level Databricks groups |
+| Governance | Unity Catalog catalog/schemas, managed storage, external landing volume, least-privilege grants |
+| Batch ingestion | Lakeflow Spark Declarative Pipelines + Auto Loader for customers/products |
+| Streaming ingestion | replayable raw order-event envelopes + Event Hubs/Kafka adapter |
+| Medallion | Bronze source fidelity → Silver contracts/conformance → Gold data products |
+| CDC/SCD | deterministic latest-state pattern with explicit SCD strategy ADR |
+| Data quality | YAML contracts, Lakeflow expectations, quarantine and `_dq_errors` |
+| Packaging | Python source package + wheel artifact |
+| Application delivery | Databricks Declarative Automation Bundle |
+| Testing | unit, Spark transformation, contract and deterministic failure-scenario tests |
+| CI/CD | public lint/test/build/Terraform validation + gated cloud deployment workflow |
+| Observability | Databricks system-table reliability / FinOps / audit starter queries |
+| FinOps | environment/workload tags + billing usage attribution |
+| Recovery | replay boundary, checkpoint guidance, IaC reconstruction and runbooks |
+| Architecture | logical/physical/security/deployment/DR diagrams + 23 ADRs + reference NFRs |
 
-## Reference use case
-
-The sample domain is a simplified **retail / e-commerce platform**:
-
-- Customers and products are ingested in batch.
-- Orders and clickstream events are ingested in near real time.
-- Bronze stores immutable/raw representations.
-- Silver validates, deduplicates and conforms entities.
-- Gold exposes business-ready data products and KPIs.
-
-```mermaid
-flowchart LR
-    A[Customer / Product files] --> B[Batch ingestion]
-    C[(Operational DB / CDC)] --> D[Incremental ingestion]
-    E[Orders / Clickstream] --> F[Event stream]
-    B --> G[(Bronze Delta)]
-    D --> G
-    F --> G
-    G --> H[(Silver Delta)]
-    H --> I[(Gold Data Products)]
-    I --> J[BI / SQL]
-    I --> K[ML / AI]
-    I --> L[APIs / Sharing]
-```
-
-## Architecture principles
-
-1. **Everything as code** — infrastructure, platform resources, jobs and pipelines are version controlled.
-2. **Clear lifecycle boundaries** — Terraform owns platform infrastructure; Databricks Bundles own application deployment.
-3. **Batch and streaming converge** — both patterns write governed Delta tables and share transformation logic where useful.
-4. **Governance by design** — Unity Catalog, least privilege, environment isolation and ownership are part of the architecture.
-5. **Production before notebooks** — reusable Python/SQL modules are preferred over notebook-only implementations.
-6. **Idempotent and observable pipelines** — restartability, lineage, quality controls and measurable SLIs are first-class concerns.
-7. **Architecture decisions are explicit** — major choices are documented as ADRs with alternatives and consequences.
-
-## Repository structure
-
-```text
-.
-├── docs/                    # Architecture, ADRs and engineering standards
-├── platform/terraform/      # Cloud + Databricks platform infrastructure
-├── applications/retail/     # Batch, streaming and Gold application examples
-├── bundles/retail/          # Databricks deployment definition
-├── templates/               # Reusable project templates
-├── tests/                   # Unit, integration, DQ and infrastructure tests
-├── examples/retail/         # End-to-end scenario documentation
-└── .github/workflows/       # CI/CD pipelines
-```
-
-## Platform vs application ownership
+## End-to-end retail scenario
 
 ```mermaid
 flowchart TB
-    subgraph Platform[Platform lifecycle - Terraform]
-      N[Networking] --> W[Databricks Workspace]
-      S[Storage] --> W
-      I[Identity] --> W
-      W --> U[Unity Catalog / External Locations / Policies]
-    end
-
-    subgraph Application[Application lifecycle - Databricks Bundles]
-      C[PySpark / SQL source] --> T[Tests]
-      T --> J[Jobs / Pipelines]
-      J --> D[DEV]
-      D --> STG[STAGING]
-      STG --> P[PROD]
-    end
+  subgraph Sources
+    C[Customers CSV snapshots]
+    P[Products CSV snapshots]
+    O[Order event JSON / Event Hubs Kafka]
+  end
+  subgraph Landing
+    V[UC external landing volume]
+  end
+  C --> V
+  P --> V
+  O --> V
+  subgraph Bronze
+    CR[customers_raw]
+    PR[products_raw]
+    OR[orders_raw + raw payload]
+  end
+  V --> CR
+  V --> PR
+  V --> OR
+  subgraph Silver
+    CS[customers / deterministic SCD1]
+    PS[products / deterministic SCD1]
+    OS[orders / watermark + dedup]
+    Q[quality quarantine]
+  end
+  CR --> CS
+  PR --> PS
+  OR --> OS
+  CS --> OS
+  PS --> OS
+  CR --> Q
+  PR --> Q
+  OS --> Q
+  subgraph Gold
+    DS[daily_sales]
+    C360[customer_360]
+    RT[realtime_sales_5m]
+  end
+  OS --> DS
+  CS --> C360
+  OS --> C360
+  OS --> RT
 ```
 
-## Delivery roadmap
+The deterministic sample-data generator includes normal records plus a customer update, invalid email, negative product price, duplicate event, unknown customer, invalid quantity, deliberately late event and corrupt JSON. This makes failure/recovery semantics observable and testable.
 
-- **D0 — Vision:** repository structure, architecture principles and reference scenario.
-- **D1 — Architecture:** logical/physical architecture, security, governance and initial ADR set.
-- **D2 — Platform foundation:** Terraform composition for Azure + Databricks + Unity Catalog.
-- **D3 — Batch pipeline:** Customers/Products → Bronze → Silver → Gold.
-- **D4 — Streaming pipeline:** Orders/Clickstream → Bronze → Silver → real-time Gold.
-- **D5 — Engineering framework:** configuration, logging, DQ, testing and reusable templates.
-- **D6 — CI/CD:** pull-request validation and controlled promotion.
-- **D7 — Governance & security:** fine-grained access patterns, lineage and classification.
-- **D8 — Observability & FinOps:** operational dashboards, SLIs/SLOs and cost controls.
-- **D9 — Advanced patterns:** CDC, SCD2, replay, schema evolution, DR and performance.
+## Architecture principles
 
-## Quick start
+1. **Architecture follows explicit NFRs and decision records.**
+2. **Terraform owns durable platform/governance boundaries; Bundles own application resources.**
+3. **Serverless-first application compute; classic VNet injection remains an enterprise reference.**
+4. **Unity Catalog is the authorization and storage abstraction boundary.**
+5. **Managed analytical tables; external volumes for externally-owned landing data.**
+6. **Bronze is replayable and source-oriented; Silver is contract-oriented; Gold is consumer-oriented.**
+7. **At-least-once input + stable event IDs + watermarking instead of vague exactly-once claims.**
+8. **Business transformations are reusable Python functions, not notebook-only logic.**
+9. **Invalid data is explicit: fail, quarantine or measure; never silently disappear.**
+10. **Operational evidence—quality, reliability, cost, security and recovery—is part of the architecture.**
 
-### Local quality checks
+## Repository map
+
+```text
+.
+├── databricks.yml
+├── resources/
+├── pipelines/retail/
+├── src/mdpr/retail/
+├── contracts/retail/
+├── tests/
+├── infra/
+│   ├── modules/
+│   └── stacks/
+├── observability/sql/
+├── governance/sql/
+├── docs/
+│   ├── architecture/
+│   ├── adr/
+│   ├── nfr/
+│   ├── patterns/
+│   ├── runbooks/
+│   └── standards/
+└── .github/workflows/
+```
+
+## Architecture documentation
+
+- [Architecture overview](docs/architecture/overview.md)
+- [Azure physical architecture](docs/architecture/physical-azure.md)
+- [Identity and governance](docs/architecture/identity-and-governance.md)
+- [Security architecture](docs/architecture/security-architecture.md)
+- [Deployment architecture](docs/architecture/deployment.md)
+- [Observability and FinOps](docs/architecture/observability.md)
+- [Disaster recovery](docs/architecture/disaster-recovery.md)
+- [Reference NFRs](docs/nfr/reference-nfrs.md)
+- [ADR index](docs/adr/README.md)
+
+## Local validation
+
+Requirements: Python 3.11+ and Terraform 1.15.x for the same validation path as CI.
 
 ```bash
 python -m pip install -e '.[dev]'
-make test
+make data
 make lint
+make test
+make build
+make contracts
+make docs
+make terraform-fmt
+make terraform-validate
 ```
 
-### Terraform validation
+## Azure foundation
 
 ```bash
-cd platform/terraform/environments/dev
-terraform init -backend=false
-terraform validate
+cd infra/stacks/azure-foundation
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
 ```
 
-### Databricks bundle validation
+The foundation creates the VNet-injected classic-network reference, HNS-enabled ADLS Gen2 storage, Databricks Access Connector managed identity, Event Hubs Kafka-compatible source, storage/Event Hubs RBAC, Log Analytics workspace and Databricks workspace.
+
+## Unity Catalog governance
+
+Apply the foundation first, then feed its outputs into the independent governance state:
 
 ```bash
-cd bundles/retail
-databricks bundle validate -t dev
+cd infra/stacks/workspace-governance
+cp terraform.tfvars.example terraform.tfvars
+terraform init
+terraform plan
 ```
 
-## Status
+The stack assumes the organization has already synchronized the referenced account-level groups. Enterprise identity lifecycle is an account/IdP concern, not a workspace-local bootstrap trick.
 
-This repository starts with the architecture and production engineering skeleton. The roadmap intentionally grows the implementation vertically: one complete scenario is preferred over many disconnected demos.
+## Databricks application deployment
 
-See [the architecture overview](docs/architecture/overview.md), [ADR index](docs/adr/README.md) and [retail scenario](examples/retail/README.md).
+```bash
+python -m build --wheel
+databricks bundle validate -t dev --var="workspace_host=$DATABRICKS_HOST"
+databricks bundle deploy -t dev --var="workspace_host=$DATABRICKS_HOST"
+```
+
+The Bundle deploys serverless Bronze/Silver/Gold Lakeflow pipelines plus an orchestration job. DEV/STAGING/PROD consistently map to `retail_dev`, `retail_stg`, and `retail_prd`.
+
+## Production adoption checklist
+
+Before production adoption, decide and validate Azure Private Link/private DNS/firewall policy, real source retention/connectivity, enterprise identity ownership, regional storage/DR requirements, measured load/skew/concurrency, central PII policies, budgets and enterprise observability integration.
+
+## License
+
+Apache License 2.0. See [LICENSE](LICENSE).

@@ -1,34 +1,48 @@
 [build-system]
-requires = ["setuptools>=70"]
+requires = ["setuptools>=75", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name = "modern-data-platform-reference"
-version = "0.1.0"
-description = "Production-oriented Databricks lakehouse reference architecture"
-requires-python = ">=3.11"
+version = "1.0.0"
+description = "Architecture-first Databricks lakehouse reference implementation"
+readme = "README.md"
+requires-python = ">=3.11,<3.14"
+license = {text = "Apache-2.0"}
 dependencies = [
-  "pyspark>=3.5,<4.1",
-  "delta-spark>=3.2,<5",
+  "PyYAML>=6.0.2,<7",
 ]
 
 [project.optional-dependencies]
+spark = ["pyspark>=4.0,<4.1"]
 dev = [
-  "pytest>=8",
-  "ruff>=0.9",
+  "build>=1.2,<2",
+  "coverage[toml]>=7.6,<8",
+  "pytest>=8.3,<10",
+  "pytest-cov>=6,<7",
+  "ruff>=0.12,<1",
+  "pyspark>=4.0,<4.1",
 ]
 
 [tool.setuptools.packages.find]
-where = ["."]
-include = ["applications*"]
+where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-pythonpath = ["."]
+pythonpath = ["src"]
+markers = ["spark: requires a local Spark runtime"]
 
 [tool.ruff]
 line-length = 100
 target-version = "py311"
 
 [tool.ruff.lint]
-select = ["E", "F", "I", "B", "UP"]
+select = ["E", "F", "I", "B", "UP", "SIM"]
+
+[tool.coverage.run]
+source = ["mdpr"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+fail_under = 80

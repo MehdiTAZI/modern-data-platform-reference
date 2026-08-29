@@ -1,20 +1,14 @@
 import pytest
 
-from applications.retail.common.config import RetailConfig
+from mdpr.retail.config import RetailConfig
 
 
-def test_dev_catalogs() -> None:
-    cfg = RetailConfig.for_environment("dev")
-    assert cfg.bronze_catalog == "dev_bronze"
-    assert cfg.silver_catalog == "dev_silver"
-    assert cfg.gold_catalog == "dev_gold"
+def test_environment_mapping():
+    assert RetailConfig.for_environment("dev").catalog == "retail_dev"
+    assert RetailConfig.for_environment("staging").catalog == "retail_stg"
+    assert RetailConfig.for_environment("prod").catalog == "retail_prd"
 
 
-def test_prod_catalogs() -> None:
-    cfg = RetailConfig.for_environment("prod")
-    assert cfg.gold_catalog == "prd_gold"
-
-
-def test_invalid_environment() -> None:
+def test_invalid_environment():
     with pytest.raises(ValueError):
-        RetailConfig.for_environment("local")
+        RetailConfig.for_environment("qa")

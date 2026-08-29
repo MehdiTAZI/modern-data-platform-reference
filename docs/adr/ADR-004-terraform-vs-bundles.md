@@ -1,19 +1,21 @@
-# ADR-004: Separate Terraform Platform IaC from Databricks Application Bundles
+# ADR-004: Terraform vs Bundles
 
 - **Status:** Accepted
 - **Date:** 2026-08-29
 
 ## Context
-
-Platform resources and data applications have different ownership, release cadence and blast radius.
+The reference architecture needs an explicit, reviewable decision for **terraform vs bundles** so implementation and documentation do not drift.
 
 ## Decision
+Terraform owns durable cloud/governance infrastructure; Declarative Automation Bundles own application resources and code.
 
-- **Terraform** owns long-lived infrastructure and platform configuration.
-- **Databricks Declarative Automation Bundles** own application jobs, pipelines and deployment targets.
-
-Application deployment must not recreate foundational workspace/network/governance resources.
+## Alternatives considered
+- Keep the concern implicit in code.
+- Use a different pattern per team without a common default.
+- Defer the decision until production, increasing migration cost.
 
 ## Consequences
+The default becomes testable and reviewable, but teams must still validate it against their scale, security, regulatory and operational constraints.
 
-The split clarifies responsibility and permits independent application releases. Interfaces between platform outputs and application configuration must be explicitly managed.
+## Reconsider when
+Requirements, platform capabilities, scale, compliance or ownership boundaries materially change.

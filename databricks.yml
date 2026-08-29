@@ -1,0 +1,51 @@
+bundle:
+  name: modern-data-platform-reference
+
+include:
+  - resources/*.yml
+
+artifacts:
+  default:
+    type: whl
+    path: .
+    build: python -m build --wheel
+
+variables:
+  workspace_host:
+    description: Target workspace URL
+  catalog:
+    default: retail_dev
+  landing_volume:
+    default: landing
+  orders_source_mode:
+    default: files
+  kafka_bootstrap_servers:
+    default: ""
+  kafka_topic:
+    default: orders
+  kafka_service_credential:
+    default: retail_dev_event_hubs
+
+targets:
+  dev:
+    default: true
+    mode: development
+    workspace:
+      host: ${var.workspace_host}
+    variables:
+      catalog: retail_dev
+      kafka_service_credential: retail_dev_event_hubs
+  staging:
+    mode: production
+    workspace:
+      host: ${var.workspace_host}
+    variables:
+      catalog: retail_stg
+      kafka_service_credential: retail_stg_event_hubs
+  prod:
+    mode: production
+    workspace:
+      host: ${var.workspace_host}
+    variables:
+      catalog: retail_prd
+      kafka_service_credential: retail_prd_event_hubs

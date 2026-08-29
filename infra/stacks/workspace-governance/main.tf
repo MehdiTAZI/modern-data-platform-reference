@@ -1,0 +1,10 @@
+module "uc" {
+  source               = "../../modules/unity-catalog"
+  catalog_name         = "retail_${var.environment}"
+  storage_account_name = var.storage_account_name
+  filesystem           = var.filesystem
+  access_connector_id  = var.access_connector_id
+  platform_admin_group = var.platform_admin_group
+  engineer_group       = var.engineer_group
+  analyst_group        = var.analyst_group
+}

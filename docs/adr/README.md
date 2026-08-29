@@ -1,14 +1,25 @@
-# Architecture Decision Records
+# ADR Index
 
-ADRs document decisions that materially shape the platform or application architecture.
-
-| ADR | Decision | Status |
-|---|---|---|
-| [001](ADR-001-lakehouse.md) | Adopt a Lakehouse architecture | Accepted |
-| [002](ADR-002-medallion.md) | Use Bronze / Silver / Gold data layers | Accepted |
-| [003](ADR-003-databricks-delta.md) | Use Databricks + Delta as primary runtime/table implementation | Accepted |
-| [004](ADR-004-terraform-vs-bundles.md) | Separate platform IaC from application deployment | Accepted |
-| [005](ADR-005-batch-streaming.md) | Support batch and streaming as first-class patterns | Accepted |
-| [006](ADR-006-unity-catalog.md) | Centralize governance with Unity Catalog | Accepted |
-| [007](ADR-007-environment-isolation.md) | Isolate DEV/STAGING/PROD deployment targets | Accepted |
-| [008](ADR-008-production-code.md) | Prefer modular source code over notebook-centric production apps | Accepted |
+- [ADR-001: Lakehouse architecture](ADR-001-lakehouse-architecture.md)
+- [ADR-002: Medallion responsibilities](ADR-002-medallion-responsibilities.md)
+- [ADR-003: Databricks and Delta reference](ADR-003-databricks-and-delta-reference.md)
+- [ADR-004: Terraform vs Bundles](ADR-004-terraform-vs-bundles.md)
+- [ADR-005: Batch and streaming convergence](ADR-005-batch-and-streaming-convergence.md)
+- [ADR-006: Unity Catalog governance](ADR-006-unity-catalog-governance.md)
+- [ADR-007: Environment isolation](ADR-007-environment-isolation.md)
+- [ADR-008: Production code over notebooks](ADR-008-production-code-over-notebooks.md)
+- [ADR-009: Catalog and schema model](ADR-009-catalog-and-schema-model.md)
+- [ADR-010: Serverless-first compute](ADR-010-serverless-first-compute.md)
+- [ADR-011: Managed vs external storage](ADR-011-managed-vs-external-storage.md)
+- [ADR-012: Workload identity](ADR-012-workload-identity.md)
+- [ADR-013: Data quality strategy](ADR-013-data-quality-strategy.md)
+- [ADR-014: CDC and SCD strategy](ADR-014-cdc-and-scd-strategy.md)
+- [ADR-015: Streaming delivery semantics](ADR-015-streaming-delivery-semantics.md)
+- [ADR-016: Schema evolution](ADR-016-schema-evolution.md)
+- [ADR-017: Replay and recovery](ADR-017-replay-and-recovery.md)
+- [ADR-018: Observability architecture](ADR-018-observability-architecture.md)
+- [ADR-019: FinOps attribution](ADR-019-finops-attribution.md)
+- [ADR-020: Disaster recovery](ADR-020-disaster-recovery.md)
+- [ADR-021: PII protection](ADR-021-pii-protection.md)
+- [ADR-022: Physical optimization](ADR-022-physical-optimization.md)
+- [ADR-023: Event streaming adapter](ADR-023-event-streaming-adapter.md)
