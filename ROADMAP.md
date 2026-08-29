@@ -63,7 +63,8 @@ V1.2 patterns are source/architecture reference implementations. Private Link, A
 
 - [x] external GitHub Actions pinned to immutable full commit SHAs
 - [x] CI policy check preventing mutable action references
-- [x] resolved Python environment vulnerability gate with pip-audit
+- [x] project-graph and resolved-environment Python vulnerability gates with pip-audit
+- [x] remediation of PYSEC-2026-3447 through setuptools 83+
 - [x] release version/tag consistency validation
 - [x] wheel + source distribution + SHA-256 checksums
 - [x] CycloneDX JSON SBOM generation
@@ -73,3 +74,15 @@ V1.2 patterns are source/architecture reference implementations. Private Link, A
 - [x] PR template enforcing architecture/evidence/security review
 
 V1.3 makes repository artifacts traceable and reviewable; signed provenance/SBOM evidence does not imply that an artifact or cloud deployment is secure by itself.
+
+## V1.4 — Reproducible infrastructure dependencies
+
+- [x] commit a Terraform dependency lockfile for every executable root
+- [x] generate locks from origin registries rather than a local provider cache
+- [x] pre-populate provider checksums for Linux amd64, Intel macOS and Apple Silicon macOS
+- [x] lock AzureRM 4.81.0 and Databricks provider 1.128.0 within reviewed version constraints
+- [x] stop ignoring `.terraform.lock.hcl` while keeping `.terraform/`, state and plans ignored
+- [x] enforce `terraform init -lockfile=readonly` in CI and local validation
+- [x] document the controlled provider-upgrade workflow in ADR-027 and the supply-chain standard
+
+V1.4 improves reproducibility and dependency review. Lockfiles complement provider constraints and checksum verification; they do not lock remote Terraform modules or prove a provider is vulnerability-free.
