@@ -2,6 +2,19 @@
 
 This project follows semantic versioning for repository release artifacts. Cloud deployment evidence is tracked independently from source versioning.
 
+## 1.5.0 — Complete medallion application workflow
+
+- Make Bronze explicitly source-faithful and non-destructive, with warn-only ingestion/schema-drift expectations.
+- Add explicit Silver validated and quarantine paths for customers, products and orders.
+- Split order quality into a pre-stateful parse/shape gate and a post-dedup business/reference gate.
+- Detect malformed JSON using Spark corrupt-record semantics instead of treating an all-null parsed struct as valid.
+- Source customer AUTO CDC SCD2 history only from rows that passed the Silver quality gate.
+- Reserve fail expectations for trusted Silver/Gold invariants; row-level source defects are quarantined instead of stopping the pipeline.
+- Add Gold customer/product dimensions, canonical order-line fact, exact daily/customer aggregates and streaming five-minute KPIs.
+- Replace streaming exact distinct aggregation with approximate distinct metrics suited to the streaming KPI surface.
+- Extend Spark tests for parse failures, late reconciliation and Gold dimensional/fact transformations.
+- Add a complete application-pipeline walkthrough and ADR-028 for quality-gate semantics.
+
 ## 1.4.0 — Reproducible infrastructure dependencies
 
 - Commit Terraform dependency lockfiles for every executable root.
