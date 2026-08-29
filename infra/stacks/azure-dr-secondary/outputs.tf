@@ -22,18 +22,6 @@ output "access_connector_id" {
   value = module.connector.id
 }
 
-output "kafka_bootstrap_servers" {
-  value = module.event_hubs.kafka_bootstrap_servers
-}
-
-output "kafka_topic" {
-  value = module.event_hubs.topic
-}
-
 output "private_endpoint_id" {
   value = try(module.private_link[0].private_endpoint_id, null)
-}
-
-output "private_dns_zone_id" {
-  value = try(module.private_link[0].private_dns_zone_id, null)
 }

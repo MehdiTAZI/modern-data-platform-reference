@@ -4,7 +4,7 @@ pytest.importorskip("pyspark")
 
 from mdpr.retail.transforms.customers import latest_customer_state, standardize_customers
 from mdpr.retail.transforms.gold import daily_sales
-from mdpr.retail.transforms.orders import deduplicate_orders
+from mdpr.retail.transforms.orders import deduplicate_orders, late_reconciliation_candidates
 
 pytestmark = pytest.mark.spark
 
@@ -35,6 +35,38 @@ def test_order_dedup(spark):
         "_ingested_at", F.to_timestamp("_ingested_at")
     )
     assert deduplicate_orders(df).count() == 1
+
+
+def test_late_reconciliation_only_returns_missing_events_before_cutoff(spark):
+    raw = spark.createDataFrame(
+        [
+            (
+                '{"event_id":"E1","order_id":"O1","customer_id":"C1","product_id":"P1",'
+                '"quantity":1,"unit_price":10.0,"event_time":"2026-01-01T00:00:00Z"}',
+                "2026-01-01 00:05:00",
+            ),
+            (
+                '{"event_id":"E2","order_id":"O2","customer_id":"C1","product_id":"P1",'
+                '"quantity":1,"unit_price":10.0,"event_time":"2026-01-01T00:10:00Z"}',
+                "2026-01-01 02:05:00",
+            ),
+            (
+                '{"event_id":"E3","order_id":"O3","customer_id":"C1","product_id":"P1",'
+                '"quantity":1,"unit_price":10.0,"event_time":"2026-01-01T02:00:00Z"}',
+                "2026-01-01 02:05:00",
+            ),
+        ],
+        ["raw_payload", "_ingested_at"],
+    )
+    delivered = spark.createDataFrame([("E1",)], ["event_id"])
+
+    rows = late_reconciliation_candidates(
+        raw,
+        delivered,
+        "2026-01-01 01:00:00",
+    ).select("event_id").collect()
+
+    assert [row.event_id for row in rows] == ["E2"]
 
 
 def test_product_latest_and_quality(spark):

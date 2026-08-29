@@ -50,9 +50,11 @@ See [V1.1 cloud deployment evidence](docs/deployment/cloud-evidence.md).
 
 ## V1.2 — Advanced pattern extensions
 
-- [ ] Declarative AUTO CDC SCD2 implementation alongside the SCD1 reference
-- [ ] schema-contract version migration example
-- [ ] late-event reconciliation/backfill scenario
-- [ ] Private Link/private DNS Azure variant
-- [ ] policy/tag-driven PII mask implementation example
-- [ ] geo-redundant DR variant driven by stricter RPO/RTO
+- [x] Declarative Lakeflow AUTO CDC SCD2 customer history alongside SCD1 current state
+- [x] versioned schema-contract migration example with CI compatibility checks
+- [x] late-event reconciliation and canonical analytical orders surface
+- [x] classic-compute backend Private Link/private DNS Azure variant
+- [x] Unity Catalog governed-tag ABAC PII masking example
+- [x] Managed DR-aligned secondary Azure substrate with GZRS storage profile
+
+V1.2 patterns are source/architecture reference implementations. Private Link, ABAC and Managed DR still require environment-specific cloud/account configuration and evidence before they can be claimed as deployed.

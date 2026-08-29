@@ -1,4 +1,4 @@
-version: 1
+version: 2
 dataset: customers
 keys: [customer_id]
 fields:
@@ -7,7 +7,11 @@ fields:
   last_name: {type: string, nullable: true}
   email: {type: string, nullable: true}
   updated_at: {type: timestamp, nullable: false}
+  loyalty_tier: {type: string, nullable: true}
 expectations:
   customer_id_not_null: {severity: fail, expression: "customer_id IS NOT NULL"}
   valid_email: {severity: quarantine, expression: "email RLIKE '^[^@ ]+@[^@ ]+\\.[^@ ]+$'"}
   updated_at_not_null: {severity: quarantine, expression: "updated_at IS NOT NULL"}
+  loyalty_tier_known:
+    severity: metric
+    expression: "loyalty_tier IS NULL OR loyalty_tier IN ('bronze', 'silver', 'gold')"

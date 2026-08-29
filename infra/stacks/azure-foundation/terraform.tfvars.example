@@ -1,2 +1,7 @@
-subscription_id = "00000000-0000-0000-0000-000000000000"
-storage_account_name = "mdprdevlake001"
+subscription_id       = "00000000-0000-0000-0000-000000000000"
+storage_account_name  = "mdprdevlake001"
+storage_replication_type = "ZRS"
+
+# Backend-only classic compute Private Link variant.
+# Browser/API access remains public; see docs/patterns/private-link.md.
+enable_private_link = false

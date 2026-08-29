@@ -29,9 +29,15 @@ jobs:
       - run: terraform fmt -check -recursive infra
       - name: Validate roots
         run: |
-          for d in infra/stacks/state-backend infra/stacks/azure-foundation infra/stacks/workspace-governance; do
-            terraform -chdir=$d init -backend=false -input=false
-            terraform -chdir=$d validate
+          roots=(
+            infra/stacks/state-backend
+            infra/stacks/azure-foundation
+            infra/stacks/workspace-governance
+            infra/stacks/azure-dr-secondary
+          )
+          for d in "${roots[@]}"; do
+            terraform -chdir="$d" init -backend=false -input=false
+            terraform -chdir="$d" validate
           done
   secrets:
     runs-on: ubuntu-latest

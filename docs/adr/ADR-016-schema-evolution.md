@@ -4,18 +4,29 @@
 - **Date:** 2026-08-29
 
 ## Context
-The reference architecture needs an explicit, reviewable decision for **schema evolution** so implementation and documentation do not drift.
+
+Bronze must tolerate producer drift without letting unreviewed fields silently redefine business-layer contracts. Consumers also need an explicit compatibility rule for planned schema evolution.
 
 ## Decision
-Rescue unexpected source fields in Bronze; promote schema changes through versioned contracts rather than automatic business-layer drift.
+
+Rescue unexpected source fields in Bronze. Promote business-layer changes through versioned contracts using an **expand → observe → enforce → contract** lifecycle.
+
+A candidate version is backward compatible only when it increments the version, preserves dataset identity and business keys, preserves existing fields and types, and does not tighten nullable fields to non-nullable. New nullable fields and metric-only observations are the default expansion mechanism.
+
+`customers.v2.yml` demonstrates a compatible nullable `loyalty_tier` addition. CI validates versioned candidates against the active contract before they can be promoted.
+
+Breaking changes require a new dataset/versioned consumer surface or an explicitly coordinated migration rather than silent Silver drift.
 
 ## Alternatives considered
-- Keep the concern implicit in code.
-- Use a different pattern per team without a common default.
-- Defer the decision until production, increasing migration cost.
+
+- Automatically promote all Bronze schema evolution into Silver.
+- Permit breaking changes behind an unchanged contract version.
+- Freeze schemas permanently and reject additive evolution.
 
 ## Consequences
-The default becomes testable and reviewable, but teams must still validate it against their scale, security, regulatory and operational constraints.
+
+Contract evolution becomes reviewable and mechanically testable. Producers may move faster in Bronze while consumer-facing compatibility remains deliberate.
 
 ## Reconsider when
-Requirements, platform capabilities, scale, compliance or ownership boundaries materially change.
+
+An enterprise schema registry or contract platform becomes the authoritative compatibility engine.

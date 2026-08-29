@@ -14,14 +14,14 @@ CATALOG = spark.conf.get("mdpr.catalog")
 
 @dp.materialized_view(name="daily_sales", cluster_by_auto=True)
 def daily_sales_mv():
-    return daily_sales(spark.read.table(f"{CATALOG}.silver.orders"))
+    return daily_sales(spark.read.table(f"{CATALOG}.silver.orders_canonical"))
 
 
 @dp.materialized_view(name="customer_360", cluster_by_auto=True)
 def customer_360_mv():
     return customer_360(
         spark.read.table(f"{CATALOG}.silver.customers"),
-        spark.read.table(f"{CATALOG}.silver.orders"),
+        spark.read.table(f"{CATALOG}.silver.orders_canonical"),
     )
 
 
