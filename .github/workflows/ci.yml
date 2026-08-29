@@ -29,8 +29,10 @@ jobs:
         with: {python-version: '3.11', cache: pip}
       - run: python -m pip install --upgrade pip
       - run: pip install -e '.[dev]'
+      - name: Audit project dependency graph
+        run: pip-audit . --strict --desc=off
       - name: Audit resolved Python environment
-        run: pip-audit --local --skip-editable --strict --desc=off
+        run: pip-audit --local --skip-editable --desc=off
   terraform:
     runs-on: ubuntu-latest
     steps:
