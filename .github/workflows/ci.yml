@@ -9,41 +9,46 @@ jobs:
   python:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with: {python-version: '3.11', cache: pip}
       - run: python -m pip install --upgrade pip
       - run: pip install -e '.[dev]'
+      - run: python scripts/validate_actions_pinned.py
       - run: ruff format --check .
       - run: ruff check .
       - run: python scripts/validate_repo.py
       - run: python scripts/validate_contracts.py
       - run: pytest -q --cov=mdpr --cov-report=term-missing
       - run: python -m build --wheel
+  dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with: {python-version: '3.11', cache: pip}
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e '.[dev]'
+      - name: Audit resolved Python environment
+        run: pip-audit --local --skip-editable --strict --desc=off
   terraform:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: hashicorp/setup-terraform@v3
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with: {terraform_version: '1.15.9'}
       - run: terraform fmt -check -recursive infra
       - name: Validate roots
         run: |
-          roots=(
-            infra/stacks/state-backend
-            infra/stacks/azure-foundation
-            infra/stacks/workspace-governance
-            infra/stacks/azure-dr-secondary
-          )
-          for d in "${roots[@]}"; do
-            terraform -chdir="$d" init -backend=false -input=false
-            terraform -chdir="$d" validate
+          for d in infra/stacks/state-backend infra/stacks/azure-foundation infra/stacks/workspace-governance infra/stacks/azure-dr-secondary; do
+            terraform -chdir=$d init -backend=false -input=false
+            terraform -chdir=$d validate
           done
   secrets:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with: {fetch-depth: 0}
-      - uses: gitleaks/gitleaks-action@v2
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

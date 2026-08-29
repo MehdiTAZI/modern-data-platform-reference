@@ -7,5 +7,14 @@ updates:
     directory: /
     schedule: {interval: weekly}
   - package-ecosystem: terraform
+    directory: /infra/stacks/state-backend
+    schedule: {interval: weekly}
+  - package-ecosystem: terraform
     directory: /infra/stacks/azure-foundation
+    schedule: {interval: weekly}
+  - package-ecosystem: terraform
+    directory: /infra/stacks/workspace-governance
+    schedule: {interval: weekly}
+  - package-ecosystem: terraform
+    directory: /infra/stacks/azure-dr-secondary
     schedule: {interval: weekly}
