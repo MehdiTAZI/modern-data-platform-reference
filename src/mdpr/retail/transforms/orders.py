@@ -19,7 +19,12 @@ ORDER_SCHEMA = T.StructType(
 
 def parse_order_envelope(df: DataFrame) -> DataFrame:
     parsed = F.from_json(F.col("raw_payload"), ORDER_SCHEMA)
-    return df.withColumn("_event", parsed).select("*", "_event.*").drop("_event")
+    return (
+        df.withColumn("_event", parsed)
+        .withColumn("_parse_ok", F.col("_event").isNotNull())
+        .select("*", "_event.*")
+        .drop("_event")
+    )
 
 
 def deduplicate_orders(df: DataFrame) -> DataFrame:
@@ -64,6 +69,7 @@ def late_reconciliation_candidates(
     delivered_ids = delivered_orders.select("event_id").filter("event_id IS NOT NULL").distinct()
     return (
         parse_order_envelope(raw_orders)
+        .filter(F.col("_parse_ok"))
         .filter(F.col("event_id").isNotNull())
         .filter(F.col("event_time").isNotNull())
         .filter(F.col("event_time") < cutoff)

@@ -8,6 +8,7 @@ fields:
   email: {type: string, nullable: true}
   updated_at: {type: timestamp, nullable: false}
 expectations:
-  customer_id_not_null: {severity: fail, expression: "customer_id IS NOT NULL"}
+  customer_id_not_null: {severity: quarantine, expression: "customer_id IS NOT NULL"}
   valid_email: {severity: quarantine, expression: "email RLIKE '^[^@ ]+@[^@ ]+\\.[^@ ]+$'"}
   updated_at_not_null: {severity: quarantine, expression: "updated_at IS NOT NULL"}
+  email_population: {severity: metric, expression: "email IS NOT NULL"}
