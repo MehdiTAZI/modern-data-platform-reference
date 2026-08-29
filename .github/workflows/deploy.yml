@@ -75,7 +75,7 @@ jobs:
       ANALYST_GROUP: ${{ vars.DATABRICKS_ANALYST_GROUP || 'retail-data-analysts' }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Initialize evidence directory
         shell: bash
@@ -109,17 +109,17 @@ jobs:
             exit 2
           fi
 
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: "3.11"
           cache: pip
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
         with:
           terraform_version: "1.15.9"
 
       - name: Azure login with GitHub OIDC
-        uses: azure/login@v2
+        uses: Azure/login@532459ea530d8321f2fb9bb10d1e0bcf23869a43 # v3.0.0
         with:
           client-id: ${{ secrets.AZURE_CLIENT_ID }}
           tenant-id: ${{ secrets.AZURE_TENANT_ID }}
@@ -132,7 +132,7 @@ jobs:
           pip install -e . build
 
       - name: Install Databricks CLI
-        uses: databricks/setup-cli@v1.10.0
+        uses: databricks/setup-cli@8821c27b1fe57472264eeb6e50c1f31d69552f28 # v1.10.0
 
       - name: Record tool versions
         shell: bash
@@ -347,7 +347,7 @@ jobs:
 
       - name: Upload raw V1.1 evidence
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: mdpr-v1.1-${{ inputs.action }}-${{ github.run_id }}
           path: evidence/
