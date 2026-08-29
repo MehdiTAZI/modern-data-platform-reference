@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+dist/
+build/
+*.egg-info/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+*.tfplan
+.terraform.lock.hcl
+crash.log
+
+# Databricks
+.databricks/
+.databricks/bundle/
+
+# IDE / OS
+.DS_Store
+.idea/
+.vscode/
+
+# Secrets / local configuration
+.env
+.env.*
+*.pem
+*.key
+secrets/
