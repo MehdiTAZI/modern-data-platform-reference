@@ -27,3 +27,4 @@
 - [ADR-025: Classic compute backend Private Link variant](ADR-025-classic-private-link-variant.md)
 - [ADR-026: Software supply-chain and release provenance](ADR-026-software-supply-chain-and-release-provenance.md)
 - [ADR-027: Terraform provider lockfiles](ADR-027-terraform-provider-lockfiles.md)
+- [ADR-028: Silver quality gates and trusted invariants](ADR-028-silver-quality-gates-and-invariants.md)

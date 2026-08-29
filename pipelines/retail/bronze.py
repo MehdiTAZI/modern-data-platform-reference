@@ -1,12 +1,8 @@
 # ruff: noqa: F821
 
-import sys
-
 from pyspark import pipelines as dp
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
-
-sys.path.insert(0, spark.conf.get("mdpr.src_root"))
 
 CATALOG = spark.conf.get("mdpr.catalog")
 LANDING = spark.conf.get("mdpr.landing_volume", "landing")
@@ -14,7 +10,12 @@ SOURCE_MODE = spark.conf.get("mdpr.orders_source_mode", "files")
 KAFKA_SERVICE_CREDENTIAL = spark.conf.get("mdpr.kafka_service_credential", "")
 
 
-@dp.table(name="customers_raw", comment="Replayable customer snapshots with ingestion metadata")
+@dp.table(
+    name="customers_raw",
+    comment="Source-faithful customer snapshots with ingestion metadata and rescued schema drift",
+)
+@dp.expect("customer_identifier_observed", "customer_id IS NOT NULL")
+@dp.expect("no_rescued_customer_fields", "_rescued_data IS NULL")
 def customers_raw():
     path = f"/Volumes/{CATALOG}/bronze/{LANDING}/customers"
     return (
@@ -29,7 +30,12 @@ def customers_raw():
     )
 
 
-@dp.table(name="products_raw", comment="Replayable product snapshots with ingestion metadata")
+@dp.table(
+    name="products_raw",
+    comment="Source-faithful product snapshots with ingestion metadata and rescued schema drift",
+)
+@dp.expect("product_identifier_observed", "product_id IS NOT NULL")
+@dp.expect("no_rescued_product_fields", "_rescued_data IS NULL")
 def products_raw():
     path = f"/Volumes/{CATALOG}/bronze/{LANDING}/products"
     return (
@@ -86,8 +92,11 @@ def _kafka_orders():
 
 
 @dp.table(
-    name="orders_raw", comment="Raw immutable order envelope retaining payload and source metadata"
+    name="orders_raw",
+    comment="Immutable raw order envelope retaining payload and source transport metadata",
 )
+@dp.expect("raw_payload_present", "raw_payload IS NOT NULL AND length(trim(raw_payload)) > 0")
+@dp.expect("supported_source", "source IN ('file', 'kafka')")
 def orders_raw():
     source = _kafka_orders() if SOURCE_MODE == "kafka" else _file_orders()
     return source.withColumn("_ingested_at", F.current_timestamp())

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modern-data-platform-reference"
-version = "1.4.0"
+version = "1.5.0"
 description = "Architecture-first Databricks lakehouse reference implementation"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"

@@ -3,8 +3,18 @@ import pytest
 pytest.importorskip("pyspark")
 
 from mdpr.retail.transforms.customers import latest_customer_state, standardize_customers
-from mdpr.retail.transforms.gold import daily_sales
-from mdpr.retail.transforms.orders import deduplicate_orders, late_reconciliation_candidates
+from mdpr.retail.transforms.gold import (
+    customer_360,
+    customer_dimension,
+    daily_sales,
+    order_lines_fact,
+    product_dimension,
+)
+from mdpr.retail.transforms.orders import (
+    deduplicate_orders,
+    late_reconciliation_candidates,
+    parse_order_envelope,
+)
 
 pytestmark = pytest.mark.spark
 
@@ -55,17 +65,14 @@ def test_late_reconciliation_only_returns_missing_events_before_cutoff(spark):
                 '"quantity":1,"unit_price":10.0,"event_time":"2026-01-01T02:00:00Z"}',
                 "2026-01-01 02:05:00",
             ),
+            ("not-json", "2026-01-01 02:05:00"),
         ],
         ["raw_payload", "_ingested_at"],
     )
     delivered = spark.createDataFrame([("E1",)], ["event_id"])
 
     rows = (
-        late_reconciliation_candidates(
-            raw,
-            delivered,
-            "2026-01-01 01:00:00",
-        )
+        late_reconciliation_candidates(raw, delivered, "2026-01-01 01:00:00")
         .select("event_id")
         .collect()
     )
@@ -95,7 +102,7 @@ def test_product_latest_and_quality(spark):
 
 
 def test_parse_and_reference_validity(spark):
-    from mdpr.retail.transforms.orders import add_reference_validity, parse_order_envelope
+    from mdpr.retail.transforms.orders import add_reference_validity
 
     raw = spark.createDataFrame(
         [
@@ -110,18 +117,45 @@ def test_parse_and_reference_validity(spark):
     customers = spark.createDataFrame([("C1",)], ["customer_id"])
     products = spark.createDataFrame([("P1",)], ["product_id"])
     row = add_reference_validity(parsed, customers, products).collect()[0]
-    assert row.event_id == "E1" and row._known_customer and row._known_product
+    assert row.event_id == "E1" and row._parse_ok and row._known_customer and row._known_product
+
+
+def test_invalid_order_payload_is_explicitly_marked(spark):
+    row = parse_order_envelope(spark.createDataFrame([("not-json",)], ["raw_payload"])).collect()[0]
+    assert row._parse_ok is False
+    assert row.event_id is None
 
 
 def test_gold_outputs(spark):
     from pyspark.sql import functions as F
 
-    from mdpr.retail.transforms.gold import customer_360
-
     orders = spark.createDataFrame(
-        [("O1", "C1", 2, 5.0, "2026-01-01 10:00:00")],
-        ["order_id", "customer_id", "quantity", "unit_price", "event_time"],
+        [("E1", "O1", "C1", "P1", 2, 5.0, "2026-01-01 10:00:00")],
+        [
+            "event_id",
+            "order_id",
+            "customer_id",
+            "product_id",
+            "quantity",
+            "unit_price",
+            "event_time",
+        ],
     ).withColumn("event_time", F.to_timestamp("event_time"))
-    customers = spark.createDataFrame([("C1", "A")], ["customer_id", "first_name"])
-    assert daily_sales(orders).collect()[0].gross_sales == 10.0
-    assert customer_360(customers, orders).collect()[0].orders == 1
+    customers = spark.createDataFrame(
+        [("C1", "Ada", "Lovelace", "ada@example.com", "2026-01-01 00:00:00")],
+        ["customer_id", "first_name", "last_name", "email", "updated_at"],
+    ).withColumn("updated_at", F.to_timestamp("updated_at"))
+    products = spark.createDataFrame(
+        [("P1", "Widget", 5.0, "2026-01-01 00:00:00")],
+        ["product_id", "name", "unit_price", "updated_at"],
+    ).withColumn("updated_at", F.to_timestamp("updated_at"))
+
+    fact = order_lines_fact(orders)
+    dim_customers = customer_dimension(customers)
+    dim_products = product_dimension(products)
+
+    assert fact.collect()[0].line_amount == 10.0
+    assert daily_sales(fact).collect()[0].gross_sales == 10.0
+    assert customer_360(dim_customers, fact).collect()[0].orders == 1
+    assert dim_customers.collect()[0].full_name == "Ada Lovelace"
+    assert dim_products.collect()[0].name == "Widget"
