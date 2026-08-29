@@ -30,6 +30,7 @@ jobs:
             infra/stacks/azure-foundation \
             infra/stacks/workspace-governance \
             infra/stacks/azure-dr-secondary; do
+            terraform -chdir="$d" init -backend=false -input=false
             terraform -chdir="$d" providers lock \
               -platform=linux_amd64 \
               -platform=darwin_amd64 \
