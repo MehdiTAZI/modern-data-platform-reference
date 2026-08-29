@@ -1,25 +1,349 @@
-name: Deploy DEV
+name: V1.1 Cloud Evidence
+run-name: V1.1 ${{ inputs.action }} / ${{ inputs.dataset_profile }} @ ${{ github.sha }}
+
 on:
   workflow_dispatch:
+    inputs:
+      action:
+        description: Lifecycle action for the disposable DEV environment
+        type: choice
+        required: true
+        default: apply
+        options:
+          - bootstrap
+          - apply
+          - destroy
+      location:
+        description: Azure region
+        type: string
+        required: true
+        default: westeurope
+      dataset_profile:
+        description: Dataset used when action=apply
+        type: choice
+        required: true
+        default: functional
+        options:
+          - functional
+          - benchmark
+      benchmark_orders:
+        description: Number of benchmark order events
+        type: number
+        required: true
+        default: 100000
+      run_pipeline:
+        description: Deploy and run Bronze -> Silver -> Gold after apply
+        type: boolean
+        required: true
+        default: true
+      confirm_destroy:
+        description: Must be enabled when action=destroy
+        type: boolean
+        required: true
+        default: false
+
+concurrency:
+  group: mdpr-v1-1-dev
+  cancel-in-progress: false
+
 permissions:
   contents: read
   id-token: write
+
 jobs:
-  deploy:
+  evidence:
     environment: dev
     runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      ARM_USE_OIDC: "true"
+      ARM_USE_AZUREAD: "true"
+      ARM_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      ARM_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      ARM_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      AZURE_PRINCIPAL_OBJECT_ID: ${{ secrets.AZURE_PRINCIPAL_OBJECT_ID }}
+      DATABRICKS_AUTH_TYPE: github-oidc
+      DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
+      STATE_PREFIX: mdpr${{ github.repository_id }}
+      STATE_RESOURCE_GROUP: mdpr${{ github.repository_id }}-tfstate-rg
+      STATE_STORAGE_ACCOUNT: mdpr${{ github.repository_id }}tfstate
+      FOUNDATION_NAME_PREFIX: mdpr-dev-${{ github.repository_id }}
+      DATA_STORAGE_ACCOUNT: mdpr${{ github.repository_id }}dev
+      CATALOG: retail_dev
+      PLATFORM_ADMIN_GROUP: ${{ vars.DATABRICKS_PLATFORM_ADMIN_GROUP || 'data-platform-admins' }}
+      ENGINEER_GROUP: ${{ vars.DATABRICKS_ENGINEER_GROUP || 'retail-data-engineers' }}
+      ANALYST_GROUP: ${{ vars.DATABRICKS_ANALYST_GROUP || 'retail-data-analysts' }}
+
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with: {python-version: '3.11'}
-      - run: pip install build
-      - name: Install Databricks CLI
-        run: curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
-      - name: Validate and deploy bundle
-        env:
-          DATABRICKS_HOST: ${{ secrets.DATABRICKS_HOST }}
-          DATABRICKS_CLIENT_ID: ${{ secrets.DATABRICKS_CLIENT_ID }}
-          DATABRICKS_CLIENT_SECRET: ${{ secrets.DATABRICKS_CLIENT_SECRET }}
+
+      - name: Initialize evidence directory
+        shell: bash
         run: |
-          databricks bundle validate -t dev --var="workspace_host=$DATABRICKS_HOST"
-          databricks bundle deploy -t dev --var="workspace_host=$DATABRICKS_HOST"
+          mkdir -p evidence
+          jq -n \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg commit "$GITHUB_SHA" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg action "${{ inputs.action }}" \
+            --arg dataset_profile "${{ inputs.dataset_profile }}" \
+            --arg location "${{ inputs.location }}" \
+            '{repository:$repository,commit:$commit,run_id:$run_id,action:$action,dataset_profile:$dataset_profile,location:$location}' \
+            > evidence/manifest.json
+
+      - name: Preflight configuration
+        shell: bash
+        run: |
+          required=(ARM_CLIENT_ID ARM_TENANT_ID ARM_SUBSCRIPTION_ID AZURE_PRINCIPAL_OBJECT_ID)
+          if [[ "${{ inputs.action }}" != "bootstrap" ]]; then
+            required+=(DATABRICKS_CLIENT_ID)
+          fi
+          for name in "${required[@]}"; do
+            if [[ -z "${!name:-}" ]]; then
+              echo "Missing required DEV environment secret: $name" >&2
+              exit 2
+            fi
+          done
+          if [[ "${{ inputs.action }}" == "destroy" && "${{ inputs.confirm_destroy }}" != "true" ]]; then
+            echo "confirm_destroy must be enabled for destroy" >&2
+            exit 2
+          fi
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.15.9"
+
+      - name: Azure login with GitHub OIDC
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Install project and Databricks CLI
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . build
+          curl -fsSL https://raw.githubusercontent.com/databricks/setup-cli/main/install.sh | sh
+          databricks version | tee evidence/databricks-cli-version.txt
+          terraform version | tee evidence/terraform-version.txt
+
+      - name: Bootstrap remote state
+        if: inputs.action == 'bootstrap'
+        env:
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          LOCATION: ${{ inputs.location }}
+        shell: bash
+        run: bash scripts/bootstrap_azure_state.sh | tee evidence/state-bootstrap.txt
+
+      - name: Verify remote state exists
+        if: inputs.action != 'bootstrap'
+        shell: bash
+        run: |
+          az storage account show \
+            --name "$STATE_STORAGE_ACCOUNT" \
+            --resource-group "$STATE_RESOURCE_GROUP" \
+            --output none
+          az storage container show \
+            --account-name "$STATE_STORAGE_ACCOUNT" \
+            --name tfstate \
+            --auth-mode login \
+            --output none
+
+      - name: Initialize Azure foundation state
+        if: inputs.action != 'bootstrap'
+        shell: bash
+        run: |
+          terraform -chdir=infra/stacks/azure-foundation init -input=false -reconfigure \
+            -backend-config="resource_group_name=$STATE_RESOURCE_GROUP" \
+            -backend-config="storage_account_name=$STATE_STORAGE_ACCOUNT" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=azure-foundation/dev.tfstate" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true"
+
+      - name: Plan and apply Azure foundation
+        if: inputs.action == 'apply'
+        shell: bash
+        run: |
+          terraform -chdir=infra/stacks/azure-foundation plan -input=false -out=tfplan \
+            -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
+            -var="location=${{ inputs.location }}" \
+            -var="name_prefix=$FOUNDATION_NAME_PREFIX" \
+            -var="storage_account_name=$DATA_STORAGE_ACCOUNT" \
+            -var="deployment_principal_object_id=$AZURE_PRINCIPAL_OBJECT_ID"
+          terraform -chdir=infra/stacks/azure-foundation show -no-color tfplan > evidence/azure-foundation-plan.txt
+          terraform -chdir=infra/stacks/azure-foundation apply -input=false -auto-approve tfplan
+
+      - name: Capture foundation outputs and configure Databricks
+        if: inputs.action == 'apply' || inputs.action == 'destroy'
+        shell: bash
+        run: |
+          terraform -chdir=infra/stacks/azure-foundation output -json > evidence/azure-foundation-outputs.json
+          workspace_host=$(terraform -chdir=infra/stacks/azure-foundation output -raw workspace_host)
+          storage_account=$(terraform -chdir=infra/stacks/azure-foundation output -raw storage_account_name)
+          filesystem=$(terraform -chdir=infra/stacks/azure-foundation output -raw filesystem)
+          access_connector_id=$(terraform -chdir=infra/stacks/azure-foundation output -raw access_connector_id)
+          kafka_bootstrap=$(terraform -chdir=infra/stacks/azure-foundation output -raw kafka_bootstrap_servers)
+          kafka_topic=$(terraform -chdir=infra/stacks/azure-foundation output -raw kafka_topic)
+          {
+            echo "DATABRICKS_HOST=$workspace_host"
+            echo "FOUNDATION_STORAGE_ACCOUNT=$storage_account"
+            echo "FOUNDATION_FILESYSTEM=$filesystem"
+            echo "ACCESS_CONNECTOR_ID=$access_connector_id"
+            echo "BUNDLE_VAR_workspace_host=$workspace_host"
+            echo "BUNDLE_VAR_kafka_bootstrap_servers=$kafka_bootstrap"
+            echo "BUNDLE_VAR_kafka_topic=$kafka_topic"
+          } >> "$GITHUB_ENV"
+
+      - name: Databricks OIDC and Unity Catalog preflight
+        if: inputs.action == 'apply' || inputs.action == 'destroy'
+        shell: bash
+        run: |
+          databricks current-user me --output json > evidence/databricks-current-user.json
+          databricks catalogs list --max-results 1 --output json > evidence/unity-catalog-preflight.json
+
+      - name: Initialize workspace-governance state
+        if: inputs.action == 'apply' || inputs.action == 'destroy'
+        shell: bash
+        run: |
+          terraform -chdir=infra/stacks/workspace-governance init -input=false -reconfigure \
+            -backend-config="resource_group_name=$STATE_RESOURCE_GROUP" \
+            -backend-config="storage_account_name=$STATE_STORAGE_ACCOUNT" \
+            -backend-config="container_name=tfstate" \
+            -backend-config="key=workspace-governance/dev.tfstate" \
+            -backend-config="use_oidc=true" \
+            -backend-config="use_azuread_auth=true"
+
+      - name: Plan and apply Unity Catalog governance
+        if: inputs.action == 'apply'
+        shell: bash
+        run: |
+          terraform -chdir=infra/stacks/workspace-governance plan -input=false -out=tfplan \
+            -var="workspace_host=$DATABRICKS_HOST" \
+            -var="environment=dev" \
+            -var="storage_account_name=$FOUNDATION_STORAGE_ACCOUNT" \
+            -var="filesystem=$FOUNDATION_FILESYSTEM" \
+            -var="access_connector_id=$ACCESS_CONNECTOR_ID" \
+            -var="platform_admin_group=$PLATFORM_ADMIN_GROUP" \
+            -var="engineer_group=$ENGINEER_GROUP" \
+            -var="analyst_group=$ANALYST_GROUP"
+          terraform -chdir=infra/stacks/workspace-governance show -no-color tfplan > evidence/workspace-governance-plan.txt
+          terraform -chdir=infra/stacks/workspace-governance apply -input=false -auto-approve tfplan
+          terraform -chdir=infra/stacks/workspace-governance output -json > evidence/workspace-governance-outputs.json
+
+      - name: Generate functional reference data
+        if: inputs.action == 'apply' && inputs.run_pipeline && inputs.dataset_profile == 'functional'
+        shell: bash
+        run: |
+          python scripts/generate_sample_data.py
+          du -b sample_data/generated/* > evidence/dataset-files.txt
+          echo '{"profile":"functional","expected_characteristics":["duplicates","bad-email","negative-price","unknown-reference","negative-quantity","late-event","corrupt-json"]}' > evidence/dataset-profile.json
+
+      - name: Generate benchmark reference data
+        if: inputs.action == 'apply' && inputs.run_pipeline && inputs.dataset_profile == 'benchmark'
+        shell: bash
+        run: |
+          python scripts/generate_benchmark_data.py \
+            --out sample_data/generated \
+            --orders "${{ inputs.benchmark_orders }}"
+          du -b sample_data/generated/* > evidence/dataset-files.txt
+          jq -n --argjson orders "${{ inputs.benchmark_orders }}" \
+            '{profile:"benchmark",orders:$orders,customers:10000,products:1000,deterministic:true}' \
+            > evidence/dataset-profile.json
+
+      - name: Upload reference data to governed landing storage
+        if: inputs.action == 'apply' && inputs.run_pipeline
+        env:
+          STORAGE_ACCOUNT: ${{ env.FOUNDATION_STORAGE_ACCOUNT }}
+          FILESYSTEM: ${{ env.FOUNDATION_FILESYSTEM }}
+          SOURCE_DIR: sample_data/generated
+          RUN_SUFFIX: ${{ github.run_id }}
+        shell: bash
+        run: bash scripts/upload_reference_data.sh | tee evidence/data-upload.txt
+
+      - name: Validate and deploy Databricks Bundle
+        if: inputs.action == 'apply' && inputs.run_pipeline
+        shell: bash
+        run: |
+          databricks bundle validate -t dev | tee evidence/bundle-validate.txt
+          databricks bundle deploy -t dev | tee evidence/bundle-deploy.txt
+          databricks bundle summary -t dev > evidence/bundle-summary.txt
+
+      - name: Execute Bronze to Silver to Gold
+        if: inputs.action == 'apply' && inputs.run_pipeline
+        shell: bash
+        run: |
+          started=$(date +%s)
+          databricks bundle run -t dev retail_refresh | tee evidence/retail-refresh.log
+          finished=$(date +%s)
+          duration=$((finished - started))
+          echo "PIPELINE_DURATION_SECONDS=$duration" >> "$GITHUB_ENV"
+          jq -n --argjson seconds "$duration" '{bronze_to_gold_seconds:$seconds}' > evidence/execution-metrics.json
+
+      - name: Capture Unity Catalog result inventory
+        if: inputs.action == 'apply' && inputs.run_pipeline
+        shell: bash
+        run: |
+          databricks tables list "$CATALOG" silver --output json > evidence/silver-tables.json
+          databricks tables list "$CATALOG" gold --output json > evidence/gold-tables.json
+          databricks volumes list "$CATALOG" bronze --output json > evidence/bronze-volumes.json
+
+      - name: Destroy Databricks Bundle
+        if: inputs.action == 'destroy'
+        shell: bash
+        run: databricks bundle destroy -t dev --auto-approve | tee evidence/bundle-destroy.txt
+
+      - name: Destroy Unity Catalog governance
+        if: inputs.action == 'destroy'
+        shell: bash
+        run: |
+          terraform -chdir=infra/stacks/workspace-governance destroy -input=false -auto-approve \
+            -var="workspace_host=$DATABRICKS_HOST" \
+            -var="environment=dev" \
+            -var="storage_account_name=$FOUNDATION_STORAGE_ACCOUNT" \
+            -var="filesystem=$FOUNDATION_FILESYSTEM" \
+            -var="access_connector_id=$ACCESS_CONNECTOR_ID" \
+            -var="platform_admin_group=$PLATFORM_ADMIN_GROUP" \
+            -var="engineer_group=$ENGINEER_GROUP" \
+            -var="analyst_group=$ANALYST_GROUP" \
+            | tee evidence/workspace-governance-destroy.txt
+
+      - name: Destroy Azure foundation
+        if: inputs.action == 'destroy'
+        shell: bash
+        run: |
+          terraform -chdir=infra/stacks/azure-foundation destroy -input=false -auto-approve \
+            -var="subscription_id=$ARM_SUBSCRIPTION_ID" \
+            -var="location=${{ inputs.location }}" \
+            -var="name_prefix=$FOUNDATION_NAME_PREFIX" \
+            -var="storage_account_name=$DATA_STORAGE_ACCOUNT" \
+            -var="deployment_principal_object_id=$AZURE_PRINCIPAL_OBJECT_ID" \
+            | tee evidence/azure-foundation-destroy.txt
+
+      - name: Sanitize public evidence
+        if: always()
+        shell: bash
+        run: |
+          [[ -d evidence ]] || exit 0
+          for value in "$ARM_SUBSCRIPTION_ID" "$ARM_TENANT_ID" "$ARM_CLIENT_ID" "$DATABRICKS_CLIENT_ID" "$AZURE_PRINCIPAL_OBJECT_ID"; do
+            [[ -n "$value" ]] || continue
+            while IFS= read -r -d '' file; do
+              sed -i "s|$value|<redacted-identifier>|g" "$file" || true
+            done < <(find evidence -type f -print0)
+          done
+
+      - name: Upload raw V1.1 evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mdpr-v1.1-${{ inputs.action }}-${{ github.run_id }}
+          path: evidence/
+          if-no-files-found: warn
+          retention-days: 30

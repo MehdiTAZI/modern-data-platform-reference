@@ -16,6 +16,12 @@ variable "storage_account_name" {
   type = string
 }
 
+variable "deployment_principal_object_id" {
+  type     = string
+  default  = null
+  nullable = true
+}
+
 variable "tags" {
   type = map(string)
   default = {

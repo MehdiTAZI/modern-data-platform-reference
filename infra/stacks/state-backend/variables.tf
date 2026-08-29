@@ -11,3 +11,9 @@ variable "name_prefix" {
   type    = string
   default = "mdpr"
 }
+
+variable "deployment_principal_object_id" {
+  type     = string
+  default  = null
+  nullable = true
+}
