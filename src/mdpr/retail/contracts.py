@@ -4,6 +4,7 @@ from typing import Any
 
 import yaml
 
+
 @dataclass(frozen=True)
 class Contract:
     dataset: str
@@ -17,12 +18,14 @@ def load_contract(path: str | Path) -> Contract:
     missing = required - data.keys()
     if missing:
         raise ValueError(f"Missing contract fields: {sorted(missing)}")
+
     expectations = data["expectations"]
     for name, rule in expectations.items():
         if rule.get("severity") not in {"fail", "quarantine", "metric"}:
             raise ValueError(f"Invalid severity for {name}")
         if not rule.get("expression"):
             raise ValueError(f"Missing expression for {name}")
+
     return Contract(data["dataset"], tuple(data["keys"]), expectations)
 
 

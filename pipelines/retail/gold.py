@@ -1,7 +1,10 @@
 import sys
 
 from pyspark import pipelines as dp
+from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
+
+spark: SparkSession
 
 sys.path.insert(0, spark.conf.get("mdpr.src_root"))
 
@@ -17,7 +20,10 @@ def daily_sales_mv():
 
 @dp.materialized_view(name="customer_360", cluster_by_auto=True)
 def customer_360_mv():
-    return customer_360(spark.read.table(f"{CATALOG}.silver.customers"), spark.read.table(f"{CATALOG}.silver.orders"))
+    return customer_360(
+        spark.read.table(f"{CATALOG}.silver.customers"),
+        spark.read.table(f"{CATALOG}.silver.orders"),
+    )
 
 
 @dp.table(name="realtime_sales_5m", cluster_by_auto=True)

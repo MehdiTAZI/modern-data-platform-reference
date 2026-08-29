@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 ENV_PREFIX = {"dev": "dev", "staging": "stg", "prod": "prd"}
 
+
 @dataclass(frozen=True)
 class RetailConfig:
     environment: str
