@@ -3,11 +3,11 @@
 [![CI](https://github.com/MehdiTAZI/modern-data-platform-reference/actions/workflows/ci.yml/badge.svg)](https://github.com/MehdiTAZI/modern-data-platform-reference/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-A production-oriented, architecture-first reference for designing and engineering a modern enterprise **Databricks Lakehouse** on Azure. It demonstrates platform infrastructure, Unity Catalog governance, batch and streaming data products, contract-driven quality, CDC/SCD, testing, CI/CD, observability, FinOps, recovery and the architectural decisions behind those patterns.
+A production-oriented, architecture-first reference for designing and engineering a modern enterprise **Databricks Lakehouse** on Azure. It demonstrates platform infrastructure, Unity Catalog governance, batch and streaming data products, contract-driven quality, CDC/SCD, testing, CI/CD, observability, FinOps, recovery, software supply-chain controls and the architectural decisions behind those patterns.
 
 The repository deliberately implements **one deep retail/e-commerce vertical slice** instead of collecting unrelated snippets.
 
-> **Deployment status:** V1.0 source/static validation is reproducible without cloud credentials. V1.1 adds OIDC-first cloud-evidence automation but a real cloud run still requires your disposable Azure/Databricks account and federated identities. V1.2 adds advanced source/reference patterns for AUTO CDC SCD2, contract migration, late-event reconciliation, backend Private Link, ABAC PII masking and secondary-region DR. Those environment-dependent controls are not claimed as deployed until exercised in a real account.
+> **Deployment status:** V1.0 source/static validation is reproducible without cloud credentials. V1.1 adds OIDC-first cloud-evidence automation but a real cloud run still requires your disposable Azure/Databricks account and federated identities. V1.2 adds advanced source/reference patterns for AUTO CDC SCD2, contract migration, late-event reconciliation, backend Private Link, ABAC PII masking and secondary-region DR. V1.3 adds immutable GitHub Action references, dependency auditing, release checksums, CycloneDX SBOMs and signed artifact attestations. Environment-dependent cloud controls are not claimed as deployed until exercised in a real account.
 
 ## Capability map
 
@@ -23,15 +23,16 @@ The repository deliberately implements **one deep retail/e-commerce vertical sli
 | Schema evolution | rescued Bronze fields + versioned contract compatibility/migration example |
 | Late data | bounded streaming watermark + Bronze reconciliation + canonical analytical orders |
 | Data quality | YAML contracts, Lakeflow expectations, quarantine and `_dq_errors` |
-| Packaging | Python source package + wheel artifact |
+| Packaging | Python source package + wheel/sdist release artifacts |
 | Application delivery | Databricks Declarative Automation Bundle |
 | Testing | unit, Spark transformation, contract and deterministic failure-scenario tests |
-| CI/CD | lint/test/build/Terraform validation + gated OIDC cloud-evidence workflow |
+| CI/CD | SHA-pinned Actions, lint/test/build, dependency/secret scans, Terraform validation + gated OIDC cloud evidence |
+| Supply chain | pip-audit, CycloneDX SBOM, SHA-256 checksums, GitHub/Sigstore provenance and SBOM attestations |
 | Terraform state | Azure Blob remote state with Entra/OIDC auth and separate foundation/governance keys |
 | Observability | Databricks system-table reliability / FinOps / audit starter queries |
 | FinOps | environment/workload tags + billing usage attribution |
 | Recovery/DR | replay/reconciliation + IaC reconstruction + Managed-DR-aligned secondary Azure substrate |
-| Architecture | logical/physical/security/deployment/DR diagrams + 25 ADRs + reference NFRs |
+| Architecture | logical/physical/security/deployment/DR diagrams + 26 ADRs + reference NFRs |
 
 ## End-to-end retail scenario
 
@@ -99,7 +100,7 @@ The deterministic functional dataset includes a customer update, invalid email, 
 7. **Bound streaming state deliberately; reconcile late business data instead of hiding it.**
 8. **Business transformations are reusable Python functions, not notebook-only logic.**
 9. **Invalid data is explicit: fail, quarantine or measure; never silently disappear.**
-10. **Security, cost, recovery and operational evidence are part of the architecture.**
+10. **Security, cost, recovery, software provenance and operational evidence are part of the architecture.**
 
 ## Repository map
 
@@ -147,6 +148,8 @@ The deterministic functional dataset includes a customer update, invalid email, 
 - [Backend Private Link](docs/patterns/private-link.md)
 - [PII ABAC](docs/patterns/pii-abac.md)
 - [Managed DR](docs/patterns/managed-dr.md)
+- [Software supply-chain standard](docs/standards/supply-chain.md)
+- [Validation/evidence matrix](docs/evidence/validation-matrix.md)
 - [V1.1 cloud deployment evidence](docs/deployment/cloud-evidence.md)
 
 ## Local validation
@@ -156,9 +159,12 @@ Requirements: Python 3.11+ and Terraform 1.15.x for the same validation path as 
 ```bash
 python -m pip install -e '.[dev]'
 make data
+make policy
 make lint
 make test
+make audit
 make build
+make sbom
 make contracts
 make docs
 make terraform-fmt
@@ -213,9 +219,13 @@ terraform -chdir=infra/stacks/azure-dr-secondary validate
 
 A real deployment needs its own remote-state key and region-specific values. This root provisions Azure substrate only; Databricks Mission Critical/Managed DR/failover-group configuration is an account-level prerequisite and must be evidenced separately.
 
+## Release provenance
+
+A `vX.Y.Z` tag must match `project.version`. The dedicated release workflow builds wheel and source distribution artifacts, audits project dependencies, emits a CycloneDX JSON SBOM and `SHA256SUMS`, creates GitHub/Sigstore build and SBOM attestations, and publishes the same evidence to the GitHub Release. See [ADR-026](docs/adr/ADR-026-software-supply-chain-and-release-provenance.md).
+
 ## Production adoption checklist
 
-Before production adoption, validate the chosen Private Link/inbound/serverless networking profile, source retention/connectivity, enterprise identity ownership, ABAC tag/policy governance, regional Managed DR eligibility, measured load/skew/concurrency, budgets and enterprise observability integration.
+Before production adoption, validate the chosen Private Link/inbound/serverless networking profile, source retention/connectivity, enterprise identity ownership, ABAC tag/policy governance, regional Managed DR eligibility, measured load/skew/concurrency, budgets, enterprise observability integration and organizational software-supply-chain policy.
 
 ## License
 

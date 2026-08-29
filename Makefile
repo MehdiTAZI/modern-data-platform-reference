@@ -1,4 +1,4 @@
-.PHONY: install lint test test-unit test-spark build data contracts docs repo-check terraform-fmt terraform-validate ci
+.PHONY: install lint test test-unit test-spark build data contracts docs repo-check policy audit sbom terraform-fmt terraform-validate ci
 
 install:
 	python -m pip install -e '.[dev]'
@@ -28,14 +28,25 @@ contracts:
 repo-check:
 	python scripts/validate_repo.py
 
+policy:
+	python scripts/validate_actions_pinned.py
+
+audit:
+	pip-audit . --strict --desc=off
+	pip-audit --local --skip-editable --desc=off
+
+sbom:
+	mkdir -p dist
+	pip-audit . --strict --desc=off --format cyclonedx-json --output dist/sbom.cdx.json
+
 terraform-fmt:
 	terraform fmt -check -recursive infra
 
 terraform-validate:
-	for d in infra/stacks/state-backend infra/stacks/azure-foundation infra/stacks/workspace-governance; do \
+	for d in infra/stacks/state-backend infra/stacks/azure-foundation infra/stacks/workspace-governance infra/stacks/azure-dr-secondary; do \
 		terraform -chdir=$$d init -backend=false -input=false && terraform -chdir=$$d validate; \
 	done
 
 docs: repo-check
 
-ci: lint contracts repo-check test build terraform-fmt terraform-validate
+ci: policy lint contracts repo-check test build audit terraform-fmt terraform-validate

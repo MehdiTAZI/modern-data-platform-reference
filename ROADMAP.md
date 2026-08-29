@@ -58,3 +58,18 @@ See [V1.1 cloud deployment evidence](docs/deployment/cloud-evidence.md).
 - [x] Managed DR-aligned secondary Azure substrate with GZRS storage profile
 
 V1.2 patterns are source/architecture reference implementations. Private Link, ABAC and Managed DR still require environment-specific cloud/account configuration and evidence before they can be claimed as deployed.
+
+## V1.3 — Supply-chain and release engineering
+
+- [x] external GitHub Actions pinned to immutable full commit SHAs
+- [x] CI policy check preventing mutable action references
+- [x] resolved Python environment vulnerability gate with pip-audit
+- [x] release version/tag consistency validation
+- [x] wheel + source distribution + SHA-256 checksums
+- [x] CycloneDX JSON SBOM generation
+- [x] GitHub/Sigstore provenance and SBOM attestations
+- [x] Dependabot coverage for all executable Terraform roots
+- [x] validation/evidence matrix separating source, CI and cloud proof
+- [x] PR template enforcing architecture/evidence/security review
+
+V1.3 makes repository artifacts traceable and reviewable; signed provenance/SBOM evidence does not imply that an artifact or cloud deployment is secure by itself.
