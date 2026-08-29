@@ -20,6 +20,13 @@ module "storage" {
   tags                = var.tags
 }
 
+resource "azurerm_role_assignment" "evidence_data_contributor" {
+  count                = var.deployment_principal_object_id == null ? 0 : 1
+  scope                = module.storage.id
+  role_definition_name = "Storage Blob Data Contributor"
+  principal_id         = var.deployment_principal_object_id
+}
+
 module "connector" {
   source              = "../../modules/access-connector"
   name                = "${var.name_prefix}-dbc"

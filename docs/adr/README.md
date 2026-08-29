@@ -23,3 +23,4 @@
 - [ADR-021: PII protection](ADR-021-pii-protection.md)
 - [ADR-022: Physical optimization](ADR-022-physical-optimization.md)
 - [ADR-023: Event streaming adapter](ADR-023-event-streaming-adapter.md)
+- [ADR-024: Remote state and deployment evidence](ADR-024-remote-state-and-deployment-evidence.md)
