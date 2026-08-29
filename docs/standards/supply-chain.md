@@ -19,4 +19,18 @@ A `vX.Y.Z` tag must match `project.version` in `pyproject.toml`. The release wor
 Consumers can verify GitHub artifact attestations with the GitHub CLI. Attestation confirms origin/build context; it does not certify runtime security.
 
 ## Terraform
-Provider constraints remain in every executable root and Dependabot monitors each root independently. Provider-aware `terraform init -backend=false` + `validate` remains mandatory in CI.
+Every executable Terraform root must declare provider constraints **and** commit its `.terraform.lock.hcl`. Terraform working directories (`.terraform/`), plans and state remain generated/secret-bearing artifacts and stay ignored.
+
+Provider locks are generated from origin registries with:
+
+```bash
+terraform -chdir=<root> init -backend=false -input=false
+terraform -chdir=<root> providers lock \
+  -platform=linux_amd64 \
+  -platform=darwin_amd64 \
+  -platform=darwin_arm64
+```
+
+Normal validation uses `terraform init -backend=false -input=false -lockfile=readonly` followed by `terraform validate`. If the configuration can no longer initialize using the committed selection, CI fails rather than silently selecting or recording a different provider.
+
+Provider upgrades are explicit review events. Dependabot may propose compatible constraint/provider changes, but the affected lockfile must be regenerated and its provider version/checksum diff reviewed in the same change. See ADR-027.
