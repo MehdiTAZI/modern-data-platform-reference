@@ -39,7 +39,7 @@ jobs:
       - name: Commit generated lockfiles
         shell: bash
         run: |
-          git add infra/stacks/*/.terraform.lock.hcl
+          git add -f infra/stacks/*/.terraform.lock.hcl
           if git diff --cached --quiet; then
             echo 'Terraform lockfiles are already current.'
             exit 0
