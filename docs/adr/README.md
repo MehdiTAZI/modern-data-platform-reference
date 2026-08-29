@@ -26,3 +26,4 @@
 - [ADR-024: Remote state and deployment evidence](ADR-024-remote-state-and-deployment-evidence.md)
 - [ADR-025: Classic compute backend Private Link variant](ADR-025-classic-private-link-variant.md)
 - [ADR-026: Software supply-chain and release provenance](ADR-026-software-supply-chain-and-release-provenance.md)
+- [ADR-027: Terraform provider lockfiles](ADR-027-terraform-provider-lockfiles.md)
