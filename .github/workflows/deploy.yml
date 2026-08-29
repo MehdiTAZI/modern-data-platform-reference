@@ -114,7 +114,7 @@ jobs:
           python-version: "3.11"
           cache: pip
 
-      - uses: hashicorp/setup-terraform@v3
+      - uses: hashicorp/setup-terraform@v4
         with:
           terraform_version: "1.15.9"
 
