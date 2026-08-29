@@ -86,3 +86,21 @@ V1.3 makes repository artifacts traceable and reviewable; signed provenance/SBOM
 - [x] document the controlled provider-upgrade workflow in ADR-027 and the supply-chain standard
 
 V1.4 improves reproducibility and dependency review. Lockfiles complement provider constraints and checksum verification; they do not lock remote Terraform modules or prove a provider is vulnerability-free.
+
+## V1.5 — Complete application pipeline
+
+- [x] Bronze is explicitly source-faithful and non-destructive with warn-only expectations
+- [x] customer/product Silver validated streams plus reason-preserving quarantine tables
+- [x] order parse/shape gate before watermarking and stateful deduplication
+- [x] order business/reference conformance gate after deduplication and enrichment
+- [x] malformed JSON detection through Spark corrupt-record semantics
+- [x] trusted Silver outputs protected with fail-fast invariant expectations
+- [x] customer SCD2 history sourced only from validated Silver input
+- [x] late-event reconciliation into canonical analytical orders
+- [x] Gold customer/product dimensions and canonical order-line fact
+- [x] exact daily sales and customer-360 materialized aggregates
+- [x] streaming five-minute sales KPI with bounded event-time state
+- [x] Spark tests for parse failures, deduplication, reconciliation, fact/dimension and aggregate logic
+- [x] end-to-end application workflow documentation and ADR-028
+
+V1.5 completes the source-level application reference. A real Lakeflow deployment is still required to produce runtime expectation metrics, AUTO CDC evidence and end-to-end pipeline execution evidence.
