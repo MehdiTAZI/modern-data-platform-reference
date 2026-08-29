@@ -14,6 +14,10 @@ output "container_subnet_name" {
   value = azurerm_subnet.container.name
 }
 
+output "private_endpoint_subnet_id" {
+  value = try(azurerm_subnet.private_endpoint[0].id, null)
+}
+
 output "host_nsg_association_id" {
   value = azurerm_subnet_network_security_group_association.host.id
 }

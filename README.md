@@ -3,33 +3,35 @@
 [![CI](https://github.com/MehdiTAZI/modern-data-platform-reference/actions/workflows/ci.yml/badge.svg)](https://github.com/MehdiTAZI/modern-data-platform-reference/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-A production-oriented, architecture-first reference for designing and engineering a modern enterprise **Databricks Lakehouse** on Azure. It demonstrates platform infrastructure, Unity Catalog governance, batch and streaming data products, contract-driven quality, testing, CI/CD, observability, FinOps, recovery and the architectural decisions behind those patterns.
+A production-oriented, architecture-first reference for designing and engineering a modern enterprise **Databricks Lakehouse** on Azure. It demonstrates platform infrastructure, Unity Catalog governance, batch and streaming data products, contract-driven quality, CDC/SCD, testing, CI/CD, observability, FinOps, recovery and the architectural decisions behind those patterns.
 
 The repository deliberately implements **one deep retail/e-commerce vertical slice** instead of collecting unrelated snippets.
 
-> **Deployment status:** V1.0 source, static validation and local test paths are reproducible without cloud credentials. V1.1 adds an explicit OIDC-first cloud-evidence workflow for Azure foundation apply, Unity Catalog governance, governed data upload, Bundle deployment/run and sanitized evidence capture. A real cloud run still requires your own disposable Azure/Databricks account and federated identities; no cloud execution or benchmark result is claimed until that workflow succeeds.
+> **Deployment status:** V1.0 source/static validation is reproducible without cloud credentials. V1.1 adds OIDC-first cloud-evidence automation but a real cloud run still requires your disposable Azure/Databricks account and federated identities. V1.2 adds advanced source/reference patterns for AUTO CDC SCD2, contract migration, late-event reconciliation, backend Private Link, ABAC PII masking and secondary-region DR. Those environment-dependent controls are not claimed as deployed until exercised in a real account.
 
 ## Capability map
 
 | Capability | Reference implementation |
 |---|---|
-| Cloud foundation | Azure Resource Group, ADLS Gen2, VNet injection, NSG, NAT Gateway, Databricks Premium workspace |
-| Identity | Azure Databricks Access Connector managed identity + account-level Databricks groups + GitHub OIDC deployment identities |
-| Governance | Unity Catalog catalog/schemas, managed storage, external landing volume, least-privilege grants |
+| Cloud foundation | Azure RG, ADLS Gen2, VNet injection, NSG, NAT baseline, optional backend Private Link/private DNS, Databricks Premium |
+| Identity | Databricks Access Connector managed identity + account-level groups + GitHub OIDC deployment identities |
+| Governance | Unity Catalog catalog/schemas/storage/grants + governed-tag ABAC PII masking example |
 | Batch ingestion | Lakeflow Spark Declarative Pipelines + Auto Loader for customers/products |
-| Streaming ingestion | replayable raw order-event envelopes + Event Hubs/Kafka adapter |
+| Streaming ingestion | replayable raw order envelopes + Event Hubs/Kafka adapter |
 | Medallion | Bronze source fidelity → Silver contracts/conformance → Gold data products |
-| CDC/SCD | deterministic latest-state pattern with explicit SCD strategy ADR |
+| CDC/SCD | deterministic SCD1 current state + Lakeflow AUTO CDC SCD2 customer history |
+| Schema evolution | rescued Bronze fields + versioned contract compatibility/migration example |
+| Late data | bounded streaming watermark + Bronze reconciliation + canonical analytical orders |
 | Data quality | YAML contracts, Lakeflow expectations, quarantine and `_dq_errors` |
 | Packaging | Python source package + wheel artifact |
 | Application delivery | Databricks Declarative Automation Bundle |
 | Testing | unit, Spark transformation, contract and deterministic failure-scenario tests |
-| CI/CD | public lint/test/build/Terraform validation + gated OIDC cloud-evidence workflow |
-| Terraform state | Azure Blob remote state with Microsoft Entra/OIDC authentication and separate foundation/governance keys |
+| CI/CD | lint/test/build/Terraform validation + gated OIDC cloud-evidence workflow |
+| Terraform state | Azure Blob remote state with Entra/OIDC auth and separate foundation/governance keys |
 | Observability | Databricks system-table reliability / FinOps / audit starter queries |
 | FinOps | environment/workload tags + billing usage attribution |
-| Recovery | replay boundary, checkpoint guidance, IaC reconstruction and runbooks |
-| Architecture | logical/physical/security/deployment/DR diagrams + 24 ADRs + reference NFRs |
+| Recovery/DR | replay/reconciliation + IaC reconstruction + Managed-DR-aligned secondary Azure substrate |
+| Architecture | logical/physical/security/deployment/DR diagrams + 25 ADRs + reference NFRs |
 
 ## End-to-end retail scenario
 
@@ -55,14 +57,19 @@ flowchart TB
   V --> PR
   V --> OR
   subgraph Silver
-    CS[customers / deterministic SCD1]
-    PS[products / deterministic SCD1]
+    CS[customers / SCD1]
+    CH[customers_history / AUTO CDC SCD2]
+    PS[products / SCD1]
     OS[orders / watermark + dedup]
+    RC[orders_canonical / late reconciliation]
     Q[quality quarantine]
   end
   CR --> CS
+  CR --> CH
   PR --> PS
   OR --> OS
+  OR --> RC
+  OS --> RC
   CS --> OS
   PS --> OS
   CR --> Q
@@ -73,13 +80,13 @@ flowchart TB
     C360[customer_360]
     RT[realtime_sales_5m]
   end
-  OS --> DS
+  RC --> DS
   CS --> C360
-  OS --> C360
+  RC --> C360
   OS --> RT
 ```
 
-The deterministic sample-data generator includes normal records plus a customer update, invalid email, negative product price, duplicate event, unknown customer, invalid quantity, deliberately late event and corrupt JSON. This makes failure/recovery semantics observable and testable.
+The deterministic functional dataset includes a customer update, invalid email, negative product price, duplicate event, unknown customer, invalid quantity, deliberately late event and corrupt JSON. This makes quality, ordering and recovery semantics observable rather than theoretical.
 
 ## Architecture principles
 
@@ -88,11 +95,11 @@ The deterministic sample-data generator includes normal records plus a customer 
 3. **Serverless-first application compute; classic VNet injection remains an enterprise reference.**
 4. **Unity Catalog is the authorization and storage abstraction boundary.**
 5. **Managed analytical tables; external volumes for externally-owned landing data.**
-6. **Bronze is replayable and source-oriented; Silver is contract-oriented; Gold is consumer-oriented.**
-7. **At-least-once input + stable event IDs + watermarking instead of vague exactly-once claims.**
+6. **Bronze is replayable/source-oriented; Silver contract-oriented; Gold consumer-oriented.**
+7. **Bound streaming state deliberately; reconcile late business data instead of hiding it.**
 8. **Business transformations are reusable Python functions, not notebook-only logic.**
 9. **Invalid data is explicit: fail, quarantine or measure; never silently disappear.**
-10. **Operational evidence—quality, reliability, cost, security and recovery—is part of the architecture.**
+10. **Security, cost, recovery and operational evidence are part of the architecture.**
 
 ## Repository map
 
@@ -107,6 +114,9 @@ The deterministic sample-data generator includes normal records plus a customer 
 ├── infra/
 │   ├── modules/
 │   └── stacks/
+│       ├── azure-foundation/
+│       ├── workspace-governance/
+│       └── azure-dr-secondary/
 ├── observability/sql/
 ├── governance/sql/
 ├── docs/
@@ -128,12 +138,16 @@ The deterministic sample-data generator includes normal records plus a customer 
 - [Identity and governance](docs/architecture/identity-and-governance.md)
 - [Security architecture](docs/architecture/security-architecture.md)
 - [Deployment architecture](docs/architecture/deployment.md)
-- [V1.1 cloud deployment evidence](docs/deployment/cloud-evidence.md)
-- [Deployment evidence policy](docs/evidence/README.md)
-- [Observability and FinOps](docs/architecture/observability.md)
 - [Disaster recovery](docs/architecture/disaster-recovery.md)
 - [Reference NFRs](docs/nfr/reference-nfrs.md)
 - [ADR index](docs/adr/README.md)
+- [CDC/SCD pattern](docs/patterns/cdc-scd.md)
+- [Schema-contract migration](docs/patterns/schema-contract-migration.md)
+- [Late-event reconciliation](docs/patterns/late-event-reconciliation.md)
+- [Backend Private Link](docs/patterns/private-link.md)
+- [PII ABAC](docs/patterns/pii-abac.md)
+- [Managed DR](docs/patterns/managed-dr.md)
+- [V1.1 cloud deployment evidence](docs/deployment/cloud-evidence.md)
 
 ## Local validation
 
@@ -153,27 +167,27 @@ make terraform-validate
 
 ## Azure foundation
 
-The foundation uses a remote `azurerm` backend in real deployments. For credential-free local structural validation, do not invent backend values:
+The foundation uses a remote `azurerm` backend in real deployments. Credential-free structural validation is:
 
 ```bash
 terraform -chdir=infra/stacks/azure-foundation init -backend=false
 terraform -chdir=infra/stacks/azure-foundation validate
 ```
 
-The foundation creates the VNet-injected classic-network reference, HNS-enabled ADLS Gen2 storage, Databricks Access Connector managed identity, Event Hubs Kafka-compatible source, storage/Event Hubs RBAC, Log Analytics workspace and Databricks workspace.
+The baseline creates VNet-injected classic networking, HNS-enabled ADLS Gen2, Databricks Access Connector, Event Hubs, Log Analytics and a Premium workspace. `enable_private_link=true` switches to the documented backend-only classic compute Private Link profile; it does not imply full private user/serverless connectivity.
 
-For a real plan/apply with persistent state, use the documented [V1.1 cloud-evidence lifecycle](docs/deployment/cloud-evidence.md) rather than a local ephemeral state file.
+For a real plan/apply with persistent state, use the [V1.1 cloud-evidence lifecycle](docs/deployment/cloud-evidence.md).
 
 ## Unity Catalog governance
 
-The governance root is intentionally a separate Terraform state from the Azure foundation. Local structural validation is:
+The governance root is intentionally separate Terraform state from the Azure foundation:
 
 ```bash
 terraform -chdir=infra/stacks/workspace-governance init -backend=false
 terraform -chdir=infra/stacks/workspace-governance validate
 ```
 
-A real deployment applies the Azure foundation first, derives its workspace/storage/access-connector outputs, then applies workspace governance through its own remote-state key. The stack assumes the organization has already synchronized the referenced account-level groups. Enterprise identity lifecycle is an account/IdP concern, not a workspace-local bootstrap trick.
+It assumes referenced account-level groups already exist. Enterprise identity lifecycle remains an account/IdP concern. The ABAC PII example is deliberately separate SQL because governed-tag taxonomy and policy ownership are governance responsibilities, not an implicit application deployment side effect.
 
 ## Databricks application deployment
 
@@ -186,37 +200,22 @@ databricks bundle deploy -t dev --var="workspace_host=$DATABRICKS_HOST"
 databricks bundle run -t dev retail_refresh
 ```
 
-The Bundle deploys serverless Bronze/Silver/Gold Lakeflow pipelines plus an orchestration job. DEV/STAGING/PROD consistently map to `retail_dev`, `retail_stg`, and `retail_prd`.
+The Bundle deploys serverless Bronze/Silver/Gold Lakeflow pipelines plus orchestration. DEV/STAGING/PROD consistently map to `retail_dev`, `retail_stg`, and `retail_prd`.
 
-## V1.1 cloud evidence
+## Secondary-region DR substrate
 
-The manual `V1.1 Cloud Evidence` GitHub Actions workflow is the authoritative end-to-end demonstration path:
+The V1.2 secondary root is structurally validated by CI:
 
-```text
-GitHub OIDC
-    ↓
-Azure state bootstrap
-    ↓
-Azure foundation Terraform apply
-    ↓
-Databricks OIDC + Unity Catalog governance apply
-    ↓
-Functional or benchmark data generation
-    ↓
-Governed ADLS landing upload
-    ↓
-Bundle validate → deploy → Bronze → Silver → Gold run
-    ↓
-Sanitized Actions evidence artifact
-    ↓
-Reviewed evidence may be curated under docs/evidence/
+```bash
+terraform -chdir=infra/stacks/azure-dr-secondary init -backend=false
+terraform -chdir=infra/stacks/azure-dr-secondary validate
 ```
 
-The workflow also provides an explicit reverse-order `destroy` action. See [cloud-evidence.md](docs/deployment/cloud-evidence.md) and [ADR-024](docs/adr/ADR-024-remote-state-and-deployment-evidence.md).
+A real deployment needs its own remote-state key and region-specific values. This root provisions Azure substrate only; Databricks Mission Critical/Managed DR/failover-group configuration is an account-level prerequisite and must be evidenced separately.
 
 ## Production adoption checklist
 
-Before production adoption, decide and validate Azure Private Link/private DNS/firewall policy, real source retention/connectivity, enterprise identity ownership, regional storage/DR requirements, measured load/skew/concurrency, central PII policies, budgets and enterprise observability integration.
+Before production adoption, validate the chosen Private Link/inbound/serverless networking profile, source retention/connectivity, enterprise identity ownership, ABAC tag/policy governance, regional Managed DR eligibility, measured load/skew/concurrency, budgets and enterprise observability integration.
 
 ## License
 

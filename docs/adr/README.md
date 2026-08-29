@@ -24,3 +24,4 @@
 - [ADR-022: Physical optimization](ADR-022-physical-optimization.md)
 - [ADR-023: Event streaming adapter](ADR-023-event-streaming-adapter.md)
 - [ADR-024: Remote state and deployment evidence](ADR-024-remote-state-and-deployment-evidence.md)
+- [ADR-025: Classic compute backend Private Link variant](ADR-025-classic-private-link-variant.md)

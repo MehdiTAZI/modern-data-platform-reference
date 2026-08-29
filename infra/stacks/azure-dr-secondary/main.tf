@@ -9,6 +9,7 @@ module "networking" {
   name_prefix                      = var.name_prefix
   location                         = var.location
   resource_group_name              = azurerm_resource_group.this.name
+  address_space                    = var.address_space
   enable_nat_gateway               = !var.enable_private_link
   enable_private_endpoint_subnet   = var.enable_private_link
   private_endpoint_subnet_prefixes = var.private_endpoint_subnet_prefixes
@@ -22,13 +23,6 @@ module "storage" {
   resource_group_name      = azurerm_resource_group.this.name
   account_replication_type = var.storage_replication_type
   tags                     = var.tags
-}
-
-resource "azurerm_role_assignment" "evidence_data_contributor" {
-  count                = var.deployment_principal_object_id == null ? 0 : 1
-  scope                = module.storage.id
-  role_definition_name = "Storage Blob Data Contributor"
-  principal_id         = var.deployment_principal_object_id
 }
 
 module "connector" {
@@ -66,15 +60,6 @@ module "private_link" {
   vnet_id                    = module.networking.vnet_id
   private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
   tags                       = var.tags
-}
-
-module "event_hubs" {
-  source                = "../../modules/event-hubs"
-  name_prefix           = var.name_prefix
-  location              = var.location
-  resource_group_name   = azurerm_resource_group.this.name
-  consumer_principal_id = module.connector.principal_id
-  tags                  = var.tags
 }
 
 module "logs" {

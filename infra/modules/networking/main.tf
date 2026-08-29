@@ -53,6 +53,16 @@ resource "azurerm_subnet" "container" {
   }
 }
 
+resource "azurerm_subnet" "private_endpoint" {
+  count = var.enable_private_endpoint_subnet ? 1 : 0
+
+  name                              = "${var.name_prefix}-private-endpoints"
+  resource_group_name               = var.resource_group_name
+  virtual_network_name              = azurerm_virtual_network.this.name
+  address_prefixes                  = var.private_endpoint_subnet_prefixes
+  private_endpoint_network_policies = "Disabled"
+}
+
 resource "azurerm_subnet_network_security_group_association" "host" {
   subnet_id                 = azurerm_subnet.host.id
   network_security_group_id = azurerm_network_security_group.databricks.id
@@ -64,6 +74,8 @@ resource "azurerm_subnet_network_security_group_association" "container" {
 }
 
 resource "azurerm_public_ip" "nat" {
+  count = var.enable_nat_gateway ? 1 : 0
+
   name                = "${var.name_prefix}-nat-pip"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -73,6 +85,8 @@ resource "azurerm_public_ip" "nat" {
 }
 
 resource "azurerm_nat_gateway" "this" {
+  count = var.enable_nat_gateway ? 1 : 0
+
   name                = "${var.name_prefix}-nat"
   location            = var.location
   resource_group_name = var.resource_group_name
@@ -81,16 +95,22 @@ resource "azurerm_nat_gateway" "this" {
 }
 
 resource "azurerm_nat_gateway_public_ip_association" "this" {
-  nat_gateway_id       = azurerm_nat_gateway.this.id
-  public_ip_address_id = azurerm_public_ip.nat.id
+  count = var.enable_nat_gateway ? 1 : 0
+
+  nat_gateway_id       = azurerm_nat_gateway.this[0].id
+  public_ip_address_id = azurerm_public_ip.nat[0].id
 }
 
 resource "azurerm_subnet_nat_gateway_association" "host" {
+  count = var.enable_nat_gateway ? 1 : 0
+
   subnet_id      = azurerm_subnet.host.id
-  nat_gateway_id = azurerm_nat_gateway.this.id
+  nat_gateway_id = azurerm_nat_gateway.this[0].id
 }
 
 resource "azurerm_subnet_nat_gateway_association" "container" {
+  count = var.enable_nat_gateway ? 1 : 0
+
   subnet_id      = azurerm_subnet.container.id
-  nat_gateway_id = azurerm_nat_gateway.this.id
+  nat_gateway_id = azurerm_nat_gateway.this[0].id
 }

@@ -9,6 +9,10 @@ resources:
       libraries:
         - file:
             path: ../pipelines/retail/silver.py
+        - file:
+            path: ../pipelines/retail/history.py
+        - file:
+            path: ../pipelines/retail/reconciliation.py
       event_log:
         catalog: ${var.catalog}
         schema: ops

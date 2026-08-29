@@ -3,7 +3,7 @@ resource "azurerm_storage_account" "this" {
   resource_group_name           = var.resource_group_name
   location                      = var.location
   account_tier                  = "Standard"
-  account_replication_type      = "ZRS"
+  account_replication_type      = var.account_replication_type
   is_hns_enabled                = true
   min_tls_version               = "TLS1_2"
   shared_access_key_enabled     = false

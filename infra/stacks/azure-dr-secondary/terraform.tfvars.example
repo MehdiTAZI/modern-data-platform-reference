@@ -1,0 +1,5 @@
+subscription_id          = "00000000-0000-0000-0000-000000000000"
+location                 = "northeurope"
+storage_account_name     = "mdprsecondary001"
+storage_replication_type = "GZRS"
+enable_private_link      = false

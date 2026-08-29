@@ -1,10 +1,11 @@
 resource "azurerm_databricks_workspace" "this" {
-  name                          = var.name
-  resource_group_name           = var.resource_group_name
-  location                      = var.location
-  sku                           = "premium"
-  public_network_access_enabled = true
-  tags                          = var.tags
+  name                                  = var.name
+  resource_group_name                   = var.resource_group_name
+  location                              = var.location
+  sku                                   = "premium"
+  public_network_access_enabled         = var.public_network_access_enabled
+  network_security_group_rules_required = var.network_security_group_rules_required
+  tags                                  = var.tags
 
   custom_parameters {
     virtual_network_id                                   = var.vnet_id

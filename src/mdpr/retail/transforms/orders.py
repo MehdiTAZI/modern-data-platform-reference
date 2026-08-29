@@ -1,4 +1,6 @@
-from pyspark.sql import DataFrame, Window
+from datetime import datetime
+
+from pyspark.sql import Column, DataFrame, Window
 from pyspark.sql import functions as F
 from pyspark.sql import types as T
 
@@ -41,4 +43,29 @@ def add_reference_validity(
         .join(product_keys, "product_id", "left")
         .withColumn("_known_customer", F.coalesce("_known_customer", F.lit(False)))
         .withColumn("_known_product", F.coalesce("_known_product", F.lit(False)))
+    )
+
+
+def late_reconciliation_candidates(
+    raw_orders: DataFrame,
+    delivered_orders: DataFrame,
+    watermark_cutoff: Column | datetime | str,
+) -> DataFrame:
+    if isinstance(watermark_cutoff, Column):
+        cutoff = watermark_cutoff
+    else:
+        value = (
+            watermark_cutoff.isoformat()
+            if isinstance(watermark_cutoff, datetime)
+            else watermark_cutoff
+        )
+        cutoff = F.to_timestamp(F.lit(value))
+
+    delivered_ids = delivered_orders.select("event_id").filter("event_id IS NOT NULL").distinct()
+    return (
+        parse_order_envelope(raw_orders)
+        .filter(F.col("event_id").isNotNull())
+        .filter(F.col("event_time").isNotNull())
+        .filter(F.col("event_time") < cutoff)
+        .join(delivered_ids, "event_id", "left_anti")
     )
