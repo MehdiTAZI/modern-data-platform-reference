@@ -75,7 +75,7 @@ jobs:
       ANALYST_GROUP: ${{ vars.DATABRICKS_ANALYST_GROUP || 'retail-data-analysts' }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Initialize evidence directory
         shell: bash
