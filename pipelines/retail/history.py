@@ -1,7 +1,8 @@
 # ruff: noqa: F821
 
-from pyspark.sql import functions as F
 from pyspark import pipelines as dp
+
+from pyspark.sql import functions as F
 
 
 dp.create_streaming_table(
