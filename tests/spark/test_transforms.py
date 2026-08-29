@@ -60,11 +60,15 @@ def test_late_reconciliation_only_returns_missing_events_before_cutoff(spark):
     )
     delivered = spark.createDataFrame([("E1",)], ["event_id"])
 
-    rows = late_reconciliation_candidates(
-        raw,
-        delivered,
-        "2026-01-01 01:00:00",
-    ).select("event_id").collect()
+    rows = (
+        late_reconciliation_candidates(
+            raw,
+            delivered,
+            "2026-01-01 01:00:00",
+        )
+        .select("event_id")
+        .collect()
+    )
 
     assert [row.event_id for row in rows] == ["E2"]
 

@@ -61,9 +61,7 @@ def late_reconciliation_candidates(
         )
         cutoff = F.to_timestamp(F.lit(value))
 
-    delivered_ids = (
-        delivered_orders.select("event_id").filter("event_id IS NOT NULL").distinct()
-    )
+    delivered_ids = delivered_orders.select("event_id").filter("event_id IS NOT NULL").distinct()
     return (
         parse_order_envelope(raw_orders)
         .filter(F.col("event_id").isNotNull())

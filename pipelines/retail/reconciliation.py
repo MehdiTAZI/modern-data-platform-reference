@@ -38,8 +38,7 @@ def _late_checked():
 @dp.materialized_view(
     name="orders_reconciliation_candidates",
     comment=(
-        "Valid late events absent from the low-latency streaming result "
-        "after the watermark horizon"
+        "Valid late events absent from the low-latency streaming result after the watermark horizon"
     ),
 )
 def orders_reconciliation_candidates():
