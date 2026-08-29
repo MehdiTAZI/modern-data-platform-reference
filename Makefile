@@ -44,7 +44,7 @@ terraform-fmt:
 
 terraform-validate:
 	for d in infra/stacks/state-backend infra/stacks/azure-foundation infra/stacks/workspace-governance infra/stacks/azure-dr-secondary; do \
-		terraform -chdir=$$d init -backend=false -input=false && terraform -chdir=$$d validate; \
+		test -f $$d/.terraform.lock.hcl && terraform -chdir=$$d init -backend=false -input=false -lockfile=readonly && terraform -chdir=$$d validate; \
 	done
 
 docs: repo-check
