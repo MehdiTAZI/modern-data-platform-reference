@@ -7,7 +7,7 @@ A production-oriented, architecture-first reference for designing and engineerin
 
 The repository deliberately implements **one deep retail/e-commerce vertical slice** instead of collecting unrelated snippets.
 
-> **Deployment status:** V1.0 source/static validation is reproducible without cloud credentials. V1.1 adds OIDC-first cloud-evidence automation but a real cloud run still requires your disposable Azure/Databricks account and federated identities. V1.2 adds advanced source/reference patterns for AUTO CDC SCD2, contract migration, late-event reconciliation, backend Private Link, ABAC PII masking and secondary-region DR. V1.3 adds immutable GitHub Action references, dependency auditing, release checksums, CycloneDX SBOMs and signed artifact attestations. Environment-dependent cloud controls are not claimed as deployed until exercised in a real account.
+> **Deployment status:** V1.0 source/static validation is reproducible without cloud credentials. V1.1 adds OIDC-first cloud-evidence automation but a real cloud run still requires your disposable Azure/Databricks account and federated identities. V1.2 adds AUTO CDC SCD2, contract migration, late-event reconciliation, backend Private Link, ABAC PII masking and secondary-region DR patterns. V1.3 adds immutable GitHub Action references, dependency auditing, release checksums, CycloneDX SBOMs and signed artifact attestations. V1.4 adds committed multi-platform Terraform provider lockfiles and readonly lock enforcement. Environment-dependent cloud controls are not claimed as deployed until exercised in a real account.
 
 ## Capability map
 
@@ -26,13 +26,14 @@ The repository deliberately implements **one deep retail/e-commerce vertical sli
 | Packaging | Python source package + wheel/sdist release artifacts |
 | Application delivery | Databricks Declarative Automation Bundle |
 | Testing | unit, Spark transformation, contract and deterministic failure-scenario tests |
-| CI/CD | SHA-pinned Actions, lint/test/build, dependency/secret scans, Terraform validation + gated OIDC cloud evidence |
-| Supply chain | pip-audit, CycloneDX SBOM, SHA-256 checksums, GitHub/Sigstore provenance and SBOM attestations |
+| CI/CD | SHA-pinned Actions, lint/test/build, dependency/secret scans, readonly Terraform lock validation + gated OIDC cloud evidence |
+| Supply chain | pip-audit, CycloneDX SBOM, SHA-256 checksums, GitHub/Sigstore attestations + multi-platform Terraform provider locks |
 | Terraform state | Azure Blob remote state with Entra/OIDC auth and separate foundation/governance keys |
+| Terraform dependencies | per-root `.terraform.lock.hcl`, AzureRM 4.81.0 / Databricks 1.128.0, Linux + Intel/ARM macOS hashes |
 | Observability | Databricks system-table reliability / FinOps / audit starter queries |
 | FinOps | environment/workload tags + billing usage attribution |
 | Recovery/DR | replay/reconciliation + IaC reconstruction + Managed-DR-aligned secondary Azure substrate |
-| Architecture | logical/physical/security/deployment/DR diagrams + 26 ADRs + reference NFRs |
+| Architecture | logical/physical/security/deployment/DR diagrams + 27 ADRs + reference NFRs |
 
 ## End-to-end retail scenario
 
@@ -100,7 +101,7 @@ The deterministic functional dataset includes a customer update, invalid email, 
 7. **Bound streaming state deliberately; reconcile late business data instead of hiding it.**
 8. **Business transformations are reusable Python functions, not notebook-only logic.**
 9. **Invalid data is explicit: fail, quarantine or measure; never silently disappear.**
-10. **Security, cost, recovery, software provenance and operational evidence are part of the architecture.**
+10. **Security, cost, recovery, dependency provenance and operational evidence are part of the architecture.**
 
 ## Repository map
 
@@ -115,20 +116,13 @@ The deterministic functional dataset includes a customer update, invalid email, 
 ├── infra/
 │   ├── modules/
 │   └── stacks/
-│       ├── azure-foundation/
-│       ├── workspace-governance/
-│       └── azure-dr-secondary/
+│       ├── state-backend/.terraform.lock.hcl
+│       ├── azure-foundation/.terraform.lock.hcl
+│       ├── workspace-governance/.terraform.lock.hcl
+│       └── azure-dr-secondary/.terraform.lock.hcl
 ├── observability/sql/
 ├── governance/sql/
 ├── docs/
-│   ├── architecture/
-│   ├── adr/
-│   ├── deployment/
-│   ├── evidence/
-│   ├── nfr/
-│   ├── patterns/
-│   ├── runbooks/
-│   └── standards/
 └── .github/workflows/
 ```
 
@@ -142,12 +136,6 @@ The deterministic functional dataset includes a customer update, invalid email, 
 - [Disaster recovery](docs/architecture/disaster-recovery.md)
 - [Reference NFRs](docs/nfr/reference-nfrs.md)
 - [ADR index](docs/adr/README.md)
-- [CDC/SCD pattern](docs/patterns/cdc-scd.md)
-- [Schema-contract migration](docs/patterns/schema-contract-migration.md)
-- [Late-event reconciliation](docs/patterns/late-event-reconciliation.md)
-- [Backend Private Link](docs/patterns/private-link.md)
-- [PII ABAC](docs/patterns/pii-abac.md)
-- [Managed DR](docs/patterns/managed-dr.md)
 - [Software supply-chain standard](docs/standards/supply-chain.md)
 - [Validation/evidence matrix](docs/evidence/validation-matrix.md)
 - [V1.1 cloud deployment evidence](docs/deployment/cloud-evidence.md)
@@ -171,29 +159,26 @@ make terraform-fmt
 make terraform-validate
 ```
 
-## Azure foundation
+## Terraform dependency reproducibility
 
-The foundation uses a remote `azurerm` backend in real deployments. Credential-free structural validation is:
+Every executable Terraform root commits a dependency lockfile generated from the origin registries for `linux_amd64`, `darwin_amd64`, and `darwin_arm64`. Normal validation does not permit Terraform to rewrite provider selections:
 
 ```bash
-terraform -chdir=infra/stacks/azure-foundation init -backend=false
+terraform -chdir=infra/stacks/azure-foundation init -backend=false -input=false -lockfile=readonly
 terraform -chdir=infra/stacks/azure-foundation validate
 ```
 
-The baseline creates VNet-injected classic networking, HNS-enabled ADLS Gen2, Databricks Access Connector, Event Hubs, Log Analytics and a Premium workspace. `enable_private_link=true` switches to the documented backend-only classic compute Private Link profile; it does not imply full private user/serverless connectivity.
+Provider constraints still define compatibility; lockfiles record the currently reviewed provider release and checksums. See [ADR-027](docs/adr/ADR-027-terraform-provider-lockfiles.md).
+
+## Azure foundation
+
+The foundation uses a remote `azurerm` backend in real deployments. The baseline creates VNet-injected classic networking, HNS-enabled ADLS Gen2, Databricks Access Connector, Event Hubs, Log Analytics and a Premium workspace. `enable_private_link=true` switches to the documented backend-only classic compute Private Link profile; it does not imply full private user/serverless connectivity.
 
 For a real plan/apply with persistent state, use the [V1.1 cloud-evidence lifecycle](docs/deployment/cloud-evidence.md).
 
 ## Unity Catalog governance
 
-The governance root is intentionally separate Terraform state from the Azure foundation:
-
-```bash
-terraform -chdir=infra/stacks/workspace-governance init -backend=false
-terraform -chdir=infra/stacks/workspace-governance validate
-```
-
-It assumes referenced account-level groups already exist. Enterprise identity lifecycle remains an account/IdP concern. The ABAC PII example is deliberately separate SQL because governed-tag taxonomy and policy ownership are governance responsibilities, not an implicit application deployment side effect.
+The governance root is intentionally separate Terraform state from the Azure foundation. It assumes referenced account-level groups already exist. Enterprise identity lifecycle remains an account/IdP concern. The ABAC PII example is deliberately separate SQL because governed-tag taxonomy and policy ownership are governance responsibilities, not an implicit application deployment side effect.
 
 ## Databricks application deployment
 
@@ -210,14 +195,7 @@ The Bundle deploys serverless Bronze/Silver/Gold Lakeflow pipelines plus orchest
 
 ## Secondary-region DR substrate
 
-The V1.2 secondary root is structurally validated by CI:
-
-```bash
-terraform -chdir=infra/stacks/azure-dr-secondary init -backend=false
-terraform -chdir=infra/stacks/azure-dr-secondary validate
-```
-
-A real deployment needs its own remote-state key and region-specific values. This root provisions Azure substrate only; Databricks Mission Critical/Managed DR/failover-group configuration is an account-level prerequisite and must be evidenced separately.
+The V1.2 secondary root is structurally validated with the same readonly provider lock policy. A real deployment needs its own remote-state key and region-specific values. This root provisions Azure substrate only; Databricks Mission Critical/Managed DR/failover-group configuration is an account-level prerequisite and must be evidenced separately.
 
 ## Release provenance
 
