@@ -1,11 +1,10 @@
+# ruff: noqa: F821
+
 import sys
 from pathlib import Path
 
 from pyspark import pipelines as dp
-from pyspark.sql import SparkSession
 from pyspark.sql import functions as F
-
-spark: SparkSession
 
 sys.path.insert(0, spark.conf.get("mdpr.src_root"))
 

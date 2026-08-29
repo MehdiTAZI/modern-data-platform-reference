@@ -1,4 +1,5 @@
 from pathlib import Path
+
 from mdpr.retail.contracts import load_contract
 
 if __name__ == "__main__":
