@@ -32,7 +32,8 @@ policy:
 	python scripts/validate_actions_pinned.py
 
 audit:
-	pip-audit --local --skip-editable --strict --desc=off
+	pip-audit . --strict --desc=off
+	pip-audit --local --skip-editable --desc=off
 
 sbom:
 	mkdir -p dist
