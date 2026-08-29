@@ -16,12 +16,20 @@ ORDER_SCHEMA = T.StructType(
     ]
 )
 
+ORDER_PARSE_SCHEMA = T.StructType(
+    [*ORDER_SCHEMA.fields, T.StructField("_corrupt_record", T.StringType())]
+)
+
 
 def parse_order_envelope(df: DataFrame) -> DataFrame:
-    parsed = F.from_json(F.col("raw_payload"), ORDER_SCHEMA)
+    parsed = F.from_json(
+        F.col("raw_payload"),
+        ORDER_PARSE_SCHEMA,
+        {"mode": "PERMISSIVE", "columnNameOfCorruptRecord": "_corrupt_record"},
+    )
     return (
         df.withColumn("_event", parsed)
-        .withColumn("_parse_ok", F.col("_event").isNotNull())
+        .withColumn("_parse_ok", F.col("_event._corrupt_record").isNull())
         .select("*", "_event.*")
         .drop("_event")
     )
