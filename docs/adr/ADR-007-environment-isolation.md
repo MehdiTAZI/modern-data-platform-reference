@@ -1,12 +1,21 @@
-# ADR-007: Isolate DEV, STAGING and PROD Deployment Targets
+# ADR-007: Environment isolation
 
 - **Status:** Accepted
 - **Date:** 2026-08-29
 
-## Decision
+## Context
+The reference architecture needs an explicit, reviewable decision for **environment isolation** so implementation and documentation do not drift.
 
-Maintain explicit DEV, STAGING and PROD targets with distinct configuration and controlled promotion. Production resources are not modified from developer-local state.
+## Decision
+Use explicit dev/stg/prd catalogs and deployment targets; production is controlled and non-personal.
+
+## Alternatives considered
+- Keep the concern implicit in code.
+- Use a different pattern per team without a common default.
+- Defer the decision until production, increasing migration cost.
 
 ## Consequences
+The default becomes testable and reviewable, but teams must still validate it against their scale, security, regulatory and operational constraints.
 
-Promotion is more predictable and auditable, at the cost of additional environment configuration and deployment automation.
+## Reconsider when
+Requirements, platform capabilities, scale, compliance or ownership boundaries materially change.

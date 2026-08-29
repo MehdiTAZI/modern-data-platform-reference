@@ -1,39 +1,39 @@
 # Roadmap
 
-## V0.1 — Architecture foundation
+## V1.0 — Production-grade reference baseline
 
-- [x] Repository structure
-- [x] Architecture overview
-- [x] Initial ADRs
-- [x] Terraform foundation modules
-- [x] Batch and streaming application skeletons
-- [x] Databricks Bundle skeleton
-- [x] Basic CI
+- [x] Architecture/NFR/ADR documentation
+- [x] Azure VNet-injected foundation with explicit outbound NAT
+- [x] HNS-safe ADLS Gen2 + Unity Catalog Access Connector managed identity
+- [x] Unity Catalog catalog/schema/storage/grant model
+- [x] Lakeflow Auto Loader Bronze ingestion
+- [x] deterministic Silver customer/product state
+- [x] streaming order watermark/dedup/reference-integrity pattern
+- [x] Gold batch and streaming data products
+- [x] contract-driven quality and quarantine
+- [x] deterministic failure-scenario generator
+- [x] Python wheel packaging + Declarative Automation Bundle
+- [x] unit/Spark tests, coverage, CI and Terraform validation
+- [x] system-table observability/FinOps/audit starter queries
+- [x] replay/DQ incident runbooks
+- [x] Event Hubs/Kafka source adapter deployment example
 
-## V0.2 — Complete vertical slice
+## V1.1 — Cloud-applied demonstration evidence
 
-- [ ] Create sample datasets and generators
-- [ ] Implement Bronze batch ingestion with Auto Loader variant
-- [ ] Implement Silver orders streaming transformation
-- [ ] Implement Gold daily sales and real-time KPI
-- [ ] Add integration tests using local Spark/Delta where appropriate
-- [ ] Add DQ metrics and quarantine dashboards
+Requires a real Azure + Databricks test account and organization-managed identities.
 
-## V0.3 — Governance and platform hardening
+- [ ] Execute Terraform apply against disposable DEV subscription/resource group
+- [ ] Apply workspace governance against a Unity Catalog-enabled workspace
+- [ ] Upload generated reference data to the landing volume
+- [ ] Deploy Bundle and capture successful Bronze→Silver→Gold run evidence
+- [ ] Publish benchmark results against the reference NFR dataset profile
+- [ ] Export dashboard screenshots / query results to `docs/evidence/`
 
-- [ ] Implement Unity Catalog Terraform module
-- [ ] Add storage credentials and external locations
-- [ ] Add group/service-principal grants
-- [ ] Add production private networking variant
-- [ ] Add cluster/serverless policy examples
-- [ ] Add tagging and FinOps conventions
+## V1.2 — Advanced pattern extensions
 
-## V0.4 — Advanced engineering patterns
-
-- [ ] CDC merge
-- [ ] SCD Type 2
-- [ ] schema evolution
-- [ ] event-time watermarking and late data
-- [ ] replay/recovery runbook
-- [ ] performance and skew examples
-- [ ] DR strategy and ADR
+- [ ] Declarative AUTO CDC SCD2 implementation alongside the SCD1 reference
+- [ ] schema-contract version migration example
+- [ ] late-event reconciliation/backfill scenario
+- [ ] Private Link/private DNS Azure variant
+- [ ] policy/tag-driven PII mask implementation example
+- [ ] geo-redundant DR variant driven by stricter RPO/RTO

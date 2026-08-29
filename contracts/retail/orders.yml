@@ -1,0 +1,12 @@
+version: 1
+dataset: orders
+keys: [event_id]
+watermark: "30 minutes"
+expectations:
+  event_id_not_null: {severity: fail, expression: "event_id IS NOT NULL"}
+  order_id_not_null: {severity: quarantine, expression: "order_id IS NOT NULL"}
+  quantity_positive: {severity: quarantine, expression: "quantity > 0"}
+  price_non_negative: {severity: quarantine, expression: "unit_price >= 0"}
+  event_time_not_null: {severity: quarantine, expression: "event_time IS NOT NULL"}
+  known_customer: {severity: quarantine, expression: "_known_customer = true"}
+  known_product: {severity: quarantine, expression: "_known_product = true"}

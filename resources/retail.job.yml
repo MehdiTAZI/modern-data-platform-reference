@@ -1,0 +1,19 @@
+resources:
+  jobs:
+    retail_refresh:
+      name: retail-${var.catalog}-refresh
+      tags:
+        domain: retail
+        managed_by: bundle
+      tasks:
+        - task_key: bronze
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.retail_bronze.id}
+        - task_key: silver
+          depends_on: [{task_key: bronze}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.retail_silver.id}
+        - task_key: gold
+          depends_on: [{task_key: silver}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.retail_gold.id}

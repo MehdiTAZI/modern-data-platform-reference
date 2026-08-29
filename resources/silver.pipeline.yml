@@ -1,0 +1,24 @@
+resources:
+  pipelines:
+    retail_silver:
+      name: retail-${var.catalog}-silver
+      catalog: ${var.catalog}
+      schema: silver
+      serverless: true
+      root_path: ..
+      libraries:
+        - file:
+            path: ../pipelines/retail/silver.py
+      event_log:
+        catalog: ${var.catalog}
+        schema: ops
+        name: silver_pipeline_event_log
+      configuration:
+        mdpr.catalog: ${var.catalog}
+        mdpr.landing_volume: ${var.landing_volume}
+        mdpr.contract_root: ${workspace.file_path}/contracts/retail
+        mdpr.src_root: ${workspace.file_path}/src
+        mdpr.orders_source_mode: ${var.orders_source_mode}
+        mdpr.kafka_bootstrap_servers: ${var.kafka_bootstrap_servers}
+        mdpr.kafka_topic: ${var.kafka_topic}
+        mdpr.kafka_service_credential: ${var.kafka_service_credential}
