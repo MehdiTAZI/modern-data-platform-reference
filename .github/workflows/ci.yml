@@ -16,8 +16,6 @@ jobs:
       - run: pip install -e '.[dev]'
       - run: python scripts/validate_actions_pinned.py
       - run: ruff format --check .
-      - name: Show Ruff import-fix diff
-        run: ruff check --fix --diff src/mdpr/retail/contracts.py || true
       - run: ruff check .
       - run: python scripts/validate_repo.py
       - run: python scripts/validate_contracts.py
