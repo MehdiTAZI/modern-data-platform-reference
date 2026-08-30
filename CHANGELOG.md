@@ -2,6 +2,21 @@
 
 This project follows semantic versioning for repository release artifacts. Cloud deployment evidence is tracked independently from source versioning.
 
+## 1.6.0 — Data engineering deep dive
+
+- Enrich Bronze replay/idempotency metadata with source ownership, payload fingerprints and ingestion dates.
+- Extend contract rules with quality categories, operational messages and dataset ownership metadata.
+- Align reusable quality annotation with declarative expectation null semantics: only `TRUE` passes.
+- Add normalized, payload-minimized DQ events and aggregated summaries in a dedicated Ops Lakeflow pipeline.
+- Add reference-data reprocessing that can recover eventually-consistent foreign keys without mutating original quarantine evidence.
+- Re-evaluate the complete current contract during reprocessing so unrelated business defects remain quarantined.
+- Converge low-latency delivery, event-time reconciliation and reference-data remediation into deterministic canonical orders.
+- Add SCD2 event-time as-of enrichment and a temporal Gold order fact with explicit history-coverage assertions.
+- Add row-count and additive business-metric reconciliation helpers plus a fail-fast Silver-to-Gold accounting surface.
+- Add deterministic second-phase sample data for demonstrating an unknown customer becoming valid after reference catch-up.
+- Extend Spark tests for quality telemetry, remediation, temporal joins, duplicate accounting and processing-boundary reconciliation.
+- Add DQ/reconciliation observability queries plus ADR-029 and ADR-030 documenting remediation and temporal semantics.
+
 ## 1.5.0 — Complete medallion application workflow
 
 - Make Bronze explicitly source-faithful and non-destructive, with warn-only ingestion/schema-drift expectations.
