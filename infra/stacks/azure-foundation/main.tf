@@ -1,7 +1,33 @@
+locals {
+  profile = {
+    managed = {
+      enable_private_link                   = false
+      enable_browser_authentication_endpoint = false
+      public_network_access_enabled         = true
+      enable_nat_gateway                    = true
+      nsg_rules_required                    = "AllRules"
+    }
+    enterprise = {
+      enable_private_link                   = true
+      enable_browser_authentication_endpoint = false
+      public_network_access_enabled         = true
+      enable_nat_gateway                    = false
+      nsg_rules_required                    = "NoAzureDatabricksRules"
+    }
+    isolated = {
+      enable_private_link                   = true
+      enable_browser_authentication_endpoint = true
+      public_network_access_enabled         = false
+      enable_nat_gateway                    = false
+      nsg_rules_required                    = "NoAzureDatabricksRules"
+    }
+  }[var.deployment_profile]
+}
+
 resource "azurerm_resource_group" "this" {
   name     = "${var.name_prefix}-rg"
   location = var.location
-  tags     = var.tags
+  tags     = merge(var.tags, { deployment_profile = var.deployment_profile })
 }
 
 module "networking" {
@@ -9,8 +35,8 @@ module "networking" {
   name_prefix                      = var.name_prefix
   location                         = var.location
   resource_group_name              = azurerm_resource_group.this.name
-  enable_nat_gateway               = !var.enable_private_link
-  enable_private_endpoint_subnet   = var.enable_private_link
+  enable_nat_gateway               = local.profile.enable_nat_gateway
+  enable_private_endpoint_subnet   = local.profile.enable_private_link
   private_endpoint_subnet_prefixes = var.private_endpoint_subnet_prefixes
   tags                             = var.tags
 }
@@ -50,22 +76,23 @@ module "workspace" {
   container_subnet_name                 = module.networking.container_subnet_name
   host_nsg_association_id               = module.networking.host_nsg_association_id
   container_nsg_association_id          = module.networking.container_nsg_association_id
-  public_network_access_enabled         = true
-  network_security_group_rules_required = var.enable_private_link ? "NoAzureDatabricksRules" : "AllRules"
+  public_network_access_enabled         = local.profile.public_network_access_enabled
+  network_security_group_rules_required = local.profile.nsg_rules_required
   tags                                  = var.tags
 }
 
 module "private_link" {
-  count = var.enable_private_link ? 1 : 0
+  count = local.profile.enable_private_link ? 1 : 0
 
-  source                     = "../../modules/databricks-private-link"
-  name_prefix                = var.name_prefix
-  location                   = var.location
-  resource_group_name        = azurerm_resource_group.this.name
-  workspace_id               = module.workspace.id
-  vnet_id                    = module.networking.vnet_id
-  private_endpoint_subnet_id = module.networking.private_endpoint_subnet_id
-  tags                       = var.tags
+  source                                 = "../../modules/databricks-private-link"
+  name_prefix                            = var.name_prefix
+  location                               = var.location
+  resource_group_name                    = azurerm_resource_group.this.name
+  workspace_id                           = module.workspace.id
+  vnet_id                                = module.networking.vnet_id
+  private_endpoint_subnet_id             = module.networking.private_endpoint_subnet_id
+  enable_browser_authentication_endpoint = local.profile.enable_browser_authentication_endpoint
+  tags                                   = var.tags
 }
 
 module "event_hubs" {
