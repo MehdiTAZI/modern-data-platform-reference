@@ -89,7 +89,7 @@ ORDERS = [
     _order("O002", "C002", "P002", 2, 1),  # duplicate event
     _order("O003", "C999", "P001", 1, 2),  # unknown until recovery/customer catch-up
     _order("O004", "C001", "P001", -1, 3),  # invalid qty
-    _order("O005", "C001", "P002", 1, -180),  # deliberately late
+    _order("O005", "C001", "P002", 1, -45),  # late beyond the 30-minute watermark horizon
 ]
 
 
