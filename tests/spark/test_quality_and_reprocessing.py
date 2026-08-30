@@ -7,7 +7,10 @@ from mdpr.retail.quality import (
     annotate_quality,
     processing_boundary_balance,
     quality_events,
+    quality_summary,
     row_count_balance,
+    split_quarantine,
+    union_quality_events,
 )
 from mdpr.retail.transforms.orders import (
     enrich_orders_with_customer_as_of,
@@ -52,6 +55,26 @@ def test_quality_events_normalize_contract_metadata(spark):
     assert len(event.record_fingerprint) == 64
 
 
+def test_metric_only_contract_has_no_quarantine_errors(spark):
+    contract = Contract(
+        version=1,
+        dataset="metrics_only",
+        keys=("id",),
+        fields={},
+        expectations={
+            "id_population": {
+                "severity": "metric",
+                "expression": "id IS NOT NULL",
+            }
+        },
+    )
+    checked = annotate_quality(spark.createDataFrame([("R1",)], ["id"]), contract)
+    valid, rejected = split_quarantine(checked)
+
+    assert valid.collect()[0]._dq_errors == []
+    assert rejected.count() == 0
+
+
 def test_null_quality_expression_is_a_violation(spark):
     contract = Contract(
         version=1,
@@ -73,6 +96,93 @@ def test_null_quality_expression_is_a_violation(spark):
     ).collect()[0]
 
     assert checked._dq_errors == ["positive_value"]
+
+
+def test_quality_events_require_errors_and_quarantine_rules(spark):
+    quarantine_contract = Contract(
+        version=1,
+        dataset="example",
+        keys=("id",),
+        fields={},
+        expectations={
+            "id_required": {
+                "severity": "quarantine",
+                "expression": "id IS NOT NULL",
+            }
+        },
+    )
+    with pytest.raises(ValueError, match="requires an _dq_errors column"):
+        quality_events(spark.createDataFrame([("R1",)], ["id"]), quarantine_contract)
+
+    metric_contract = Contract(
+        version=1,
+        dataset="metrics_only",
+        keys=("id",),
+        fields={},
+        expectations={
+            "id_population": {
+                "severity": "metric",
+                "expression": "id IS NOT NULL",
+            }
+        },
+    )
+    frame = spark.createDataFrame([("R1", [])], "id string, _dq_errors array<string>")
+    with pytest.raises(ValueError, match="has no quarantine rules"):
+        quality_events(frame, metric_contract)
+
+
+def test_quality_events_support_missing_key_and_ingestion_metadata(spark):
+    contract = Contract(
+        version=1,
+        dataset="example",
+        keys=("id",),
+        fields={},
+        expectations={
+            "positive_value": {
+                "severity": "quarantine",
+                "category": "business",
+                "expression": "value > 0",
+            }
+        },
+    )
+    checked = spark.createDataFrame(
+        [(-1, ["positive_value"])],
+        "value int, _dq_errors array<string>",
+    )
+    event = quality_events(checked, contract).collect()[0]
+
+    assert event.stage == "example"
+    assert event.record_key is None
+    assert event.source_observed_at is not None
+
+
+def test_quality_event_union_and_summary(spark):
+    rows = [
+        (
+            "orders",
+            "silver_gate",
+            1,
+            "quantity_positive",
+            "quarantine",
+            "business",
+            "Quantity must be positive",
+            "2026-01-01 00:00:00",
+        ),
+    ]
+    schema = (
+        "dataset string, stage string, contract_version int, rule_id string, severity string, "
+        "category string, message string, source_observed_at timestamp"
+    )
+    event = spark.createDataFrame(rows, schema)
+
+    combined = union_quality_events([event, event])
+    summary = quality_summary(combined).collect()[0]
+
+    assert combined.count() == 2
+    assert summary.failed_records == 2
+
+    with pytest.raises(ValueError, match="At least one quality event DataFrame is required"):
+        union_quality_events([])
 
 
 def test_reference_quarantine_becomes_reprocessable_when_dimension_arrives(spark):
@@ -259,4 +369,15 @@ def test_row_accounting_makes_duplicate_disposition_explicit(spark):
     assert balance.source_rows == 3
     assert balance.accounted_rows == 3
     assert balance.row_delta == 0
+    assert balance.is_balanced is True
+
+
+def test_row_accounting_defaults_duplicate_count_to_zero(spark):
+    source = spark.createDataFrame([("E1",), ("E2",)], ["event_id"])
+    accepted = spark.createDataFrame([("E1",)], ["event_id"])
+    quarantined = spark.createDataFrame([("E2",)], ["event_id"])
+
+    balance = row_count_balance(source, accepted, quarantined).collect()[0]
+
+    assert balance.duplicate_rows == 0
     assert balance.is_balanced is True
