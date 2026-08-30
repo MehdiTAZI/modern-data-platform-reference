@@ -1,25 +1,25 @@
 locals {
   profile = {
     managed = {
-      enable_private_link                   = false
+      enable_private_link                    = false
       enable_browser_authentication_endpoint = false
-      public_network_access_enabled         = true
-      enable_nat_gateway                    = true
-      nsg_rules_required                    = "AllRules"
+      public_network_access_enabled          = true
+      enable_nat_gateway                     = true
+      nsg_rules_required                     = "AllRules"
     }
     enterprise = {
-      enable_private_link                   = true
+      enable_private_link                    = true
       enable_browser_authentication_endpoint = false
-      public_network_access_enabled         = true
-      enable_nat_gateway                    = false
-      nsg_rules_required                    = "NoAzureDatabricksRules"
+      public_network_access_enabled          = true
+      enable_nat_gateway                     = false
+      nsg_rules_required                     = "NoAzureDatabricksRules"
     }
     isolated = {
-      enable_private_link                   = true
+      enable_private_link                    = true
       enable_browser_authentication_endpoint = true
-      public_network_access_enabled         = false
-      enable_nat_gateway                    = false
-      nsg_rules_required                    = "NoAzureDatabricksRules"
+      public_network_access_enabled          = false
+      enable_nat_gateway                     = false
+      nsg_rules_required                     = "NoAzureDatabricksRules"
     }
   }[var.deployment_profile]
 }
