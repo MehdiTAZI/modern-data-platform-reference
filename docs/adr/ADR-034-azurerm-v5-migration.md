@@ -19,24 +19,27 @@ The reference architecture contains three executable Azure roots (`azure-foundat
    - `azure-dr-secondary`: `Microsoft.Databricks`, `Microsoft.Network`, `Microsoft.OperationalInsights`, `Microsoft.Storage`.
    - `state-backend`: `Microsoft.Storage`.
 5. Preserve the v4 plan-time location and Resource Provider validation behaviour by enabling `features.enhanced_validation.locations` and `features.enhanced_validation.resource_providers`.
-6. Do not enable Azure preflight validation by default. Preflight performs live Azure API calls during planning, requires credentials, and is currently supported only for a subset of resources. It can be enabled later for deployment environments where that operational dependency is desirable.
-7. Treat future AzureRM major upgrades as coordinated migrations across all Azure roots and module constraints, with lockfile regeneration and the complete Terraform CI suite required before merge.
+6. Migrate Private DNS zone virtual-network links to the v5 ID-based schema by replacing `resource_group_name` plus `private_dns_zone_name` with `private_dns_zone_id`.
+7. Do not enable Azure preflight validation by default. Preflight performs live Azure API calls during planning, requires credentials, and is currently supported only for a subset of resources. It can be enabled later for deployment environments where that operational dependency is desirable.
+8. Treat future AzureRM major upgrades as coordinated migrations across all Azure roots and module constraints, with lockfile regeneration and the complete Terraform CI suite required before merge.
 
 ## Compatibility review
 
-The Azure resources currently used by this repository were reviewed against the AzureRM v5 upgrade guide. Existing code already uses the non-deprecated v5 forms relevant to the repository, including:
+The Azure resources currently used by this repository were reviewed against the AzureRM v5 upgrade guide. Most of the code already uses the v5-compatible forms relevant to the repository, including:
 
 - `azurerm_eventhub.namespace_id` rather than the removed `namespace_name`/`resource_group_name` form.
 - `azurerm_storage_container.storage_account_id` rather than the removed `storage_account_name` form.
 - no removed Log Analytics internet-access flags.
 
-The migration therefore requires provider policy and dependency-lock changes rather than resource-model rewrites for the current architecture.
+One resource-model rewrite is required: `azurerm_private_dns_zone_virtual_network_link` removes `resource_group_name` and `private_dns_zone_name` in v5, so the reusable Private Link module now references `azurerm_private_dns_zone.databricks.id` through `private_dns_zone_id`.
 
 ## Consequences
 
 Provider upgrades become consistent across the Azure reference architecture, and deployments do not silently lose required Resource Provider registration when moving from v4 to v5. Registration is narrower and easier to audit than the v4 legacy set. Plan-time validation remains strict, while live preflight checks remain opt-in.
 
 Deployment identities that are expected to register Resource Providers must have the necessary Azure permissions. In organizations where registration is centrally managed, the listed providers should instead be pre-registered and the deployment operating model documented accordingly.
+
+The Private DNS link migration changes Terraform configuration syntax but preserves the intended link between the Databricks Private DNS zone and the platform virtual network.
 
 ## Alternatives considered
 
