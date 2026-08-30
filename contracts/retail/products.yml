@@ -1,8 +1,28 @@
 version: 1
 dataset: products
 keys: [product_id]
+metadata:
+  owner: retail-data-product
+  domain: retail
+  layer: silver
 expectations:
-  product_id_not_null: {severity: quarantine, expression: "product_id IS NOT NULL"}
-  non_negative_price: {severity: quarantine, expression: "unit_price >= 0"}
-  updated_at_not_null: {severity: quarantine, expression: "updated_at IS NOT NULL"}
-  product_name_population: {severity: metric, expression: "name IS NOT NULL AND trim(name) <> ''"}
+  product_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "product_id IS NOT NULL"
+    message: "Product business key is required"
+  non_negative_price:
+    severity: quarantine
+    category: business
+    expression: "unit_price >= 0"
+    message: "Product unit price cannot be negative"
+  updated_at_not_null:
+    severity: quarantine
+    category: temporal
+    expression: "updated_at IS NOT NULL"
+    message: "Product change timestamp is required for deterministic state"
+  product_name_population:
+    severity: metric
+    category: completeness
+    expression: "name IS NOT NULL AND trim(name) <> ''"
+    message: "Monitor product name population"
