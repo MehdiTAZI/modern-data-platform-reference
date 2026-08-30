@@ -28,7 +28,7 @@ def _literal_map(values: dict[str, str]):
     return F.create_map(*items)
 
 
-def quality_events(df: DataFrame, contract: Contract) -> DataFrame:
+def quality_events(df: DataFrame, contract: Contract, stage: str | None = None) -> DataFrame:
     """Turn row-level quarantine reasons into a stable, non-PII operational event model."""
     if "_dq_errors" not in df.columns:
         raise ValueError("quality_events requires an _dq_errors column")
@@ -66,6 +66,7 @@ def quality_events(df: DataFrame, contract: Contract) -> DataFrame:
         .withColumn("rule_id", F.explode("_dq_errors"))
         .select(
             F.lit(contract.dataset).alias("dataset"),
+            F.lit(stage or contract.dataset).alias("stage"),
             F.lit(contract.version).cast("int").alias("contract_version"),
             "rule_id",
             F.lit("quarantine").alias("severity"),
@@ -88,7 +89,7 @@ def union_quality_events(events: list[DataFrame]) -> DataFrame:
 
 def quality_summary(events: DataFrame) -> DataFrame:
     return events.groupBy(
-        "dataset", "contract_version", "rule_id", "severity", "category", "message"
+        "dataset", "stage", "contract_version", "rule_id", "severity", "category", "message"
     ).agg(
         F.count("*").alias("failed_records"),
         F.min("source_observed_at").alias("first_observed_at"),
