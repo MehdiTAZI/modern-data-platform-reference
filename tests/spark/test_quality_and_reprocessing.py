@@ -52,6 +52,29 @@ def test_quality_events_normalize_contract_metadata(spark):
     assert len(event.record_fingerprint) == 64
 
 
+def test_null_quality_expression_is_a_violation(spark):
+    contract = Contract(
+        version=1,
+        dataset="example",
+        keys=("id",),
+        fields={},
+        expectations={
+            "positive_value": {
+                "severity": "quarantine",
+                "category": "business",
+                "expression": "value > 0",
+                "message": "Value must be positive",
+            }
+        },
+    )
+    checked = annotate_quality(
+        spark.createDataFrame([("R1", None)], "id string, value int"),
+        contract,
+    ).collect()[0]
+
+    assert checked._dq_errors == ["positive_value"]
+
+
 def test_reference_quarantine_becomes_reprocessable_when_dimension_arrives(spark):
     from pyspark.sql import functions as F
 
@@ -198,6 +221,26 @@ def test_processing_boundary_reconciles_rows_and_amounts(spark):
     assert balanced.rows_balanced is True
     assert balanced.metrics_balanced is True
     assert balanced.is_balanced is True
+
+
+def test_processing_boundary_detects_row_or_amount_drift(spark):
+    source = spark.createDataFrame(
+        [("E1", 2, 5.0), ("E2", 1, 7.5)],
+        ["event_id", "quantity", "unit_price"],
+    )
+    target = spark.createDataFrame([("E1", 9.0)], ["event_id", "line_amount"])
+
+    result = processing_boundary_balance(
+        source,
+        target,
+        source_expression="quantity * unit_price",
+        target_expression="line_amount",
+        tolerance=0.01,
+    ).collect()[0]
+
+    assert result.rows_balanced is False
+    assert result.metrics_balanced is False
+    assert result.is_balanced is False
 
 
 def test_row_accounting_makes_duplicate_disposition_explicit(spark):
