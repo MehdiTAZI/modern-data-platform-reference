@@ -8,7 +8,10 @@ from mdpr.retail.contracts import Contract, rule_metadata
 
 def annotate_quality(df: DataFrame, contract: Contract) -> DataFrame:
     errors = [
-        F.when(~F.expr(rule["expression"]), F.lit(name))
+        F.when(
+            ~F.coalesce(F.expr(rule["expression"]), F.lit(False)),
+            F.lit(name),
+        )
         for name, rule in contract.expectations.items()
         if rule["severity"] == "quarantine"
     ]
@@ -29,7 +32,7 @@ def _literal_map(values: dict[str, str]):
 
 
 def quality_events(df: DataFrame, contract: Contract, stage: str | None = None) -> DataFrame:
-    """Turn row-level quarantine reasons into a stable, non-PII operational event model."""
+    """Turn row-level quarantine reasons into a payload-minimized operational event model."""
     if "_dq_errors" not in df.columns:
         raise ValueError("quality_events requires an _dq_errors column")
 
