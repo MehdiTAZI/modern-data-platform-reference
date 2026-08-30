@@ -104,3 +104,41 @@ V1.4 improves reproducibility and dependency review. Lockfiles complement provid
 - [x] end-to-end application workflow documentation and ADR-028
 
 V1.5 completes the source-level application reference. A real Lakeflow deployment is still required to produce runtime expectation metrics, AUTO CDC evidence and end-to-end pipeline execution evidence.
+
+## V1.6 — Data engineering deep dive
+
+- [x] enrich Bronze with source ownership, payload fingerprints and ingestion-date metadata
+- [x] enrich YAML quality rules with categories, operational messages and dataset ownership metadata
+- [x] make reusable row-quality annotation treat `NULL` rule results as violations
+- [x] normalize heterogeneous quarantine reasons into payload-minimized quality events
+- [x] deploy a dedicated `retail_ops` Lakeflow pipeline and `ops.data_quality_summary`
+- [x] add reference-data reprocessing without mutating original quarantine evidence
+- [x] re-evaluate the complete order contract during remediation rather than only the original failed rule
+- [x] converge low-latency, late-event and reference-late recovery into canonical orders
+- [x] make canonical batch deduplication use payload fingerprints as an explicit tie-breaker when available
+- [x] add SCD2 event-time as-of customer enrichment and temporal Gold fact assertions
+- [x] add reusable row-accounting and additive metric reconciliation primitives
+- [x] add fail-fast Silver-to-Gold row-count and amount reconciliation
+- [x] add deterministic second-phase reference catch-up demonstration data
+- [x] add Spark tests for quality telemetry, remediation, temporal joins and boundary reconciliation
+- [x] add DQ/reconciliation operational SQL and ADR-029/ADR-030
+
+V1.6 deepens the existing vertical slice instead of adding unrelated sources. Runtime Lakeflow, AUTO CDC and streaming evidence still require a real Databricks environment.
+
+## V1.7 — Platform Engineering / Terraform deep dive
+
+Planned next focus:
+
+- [ ] explicit managed, enterprise and isolated deployment profiles
+- [ ] serverless network/NCC reference implementation
+- [ ] clearer account/bootstrap vs Azure foundation vs workspace governance state boundaries
+- [ ] reusable naming/tagging/ownership conventions across Terraform modules
+- [ ] Terraform native tests for module and stack invariants
+- [ ] TFLint and infrastructure misconfiguration scanning in CI
+- [ ] plan-time policy-as-code for production security, ownership and FinOps controls
+- [ ] environment plan matrix and reviewed plan artifacts
+- [ ] budget/cost-attribution controls and mandatory FinOps tags
+- [ ] deeper Unity Catalog ownership, workspace bindings and least-privilege grants
+- [ ] hardened full Private Link variant and explicit serverless/private connectivity trade-offs
+
+The V1.7 goal is to make `infra/` demonstrate how a platform team industrializes the architecture, not only how to instantiate the baseline resources.
