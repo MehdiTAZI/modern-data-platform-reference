@@ -44,7 +44,8 @@ REFERENCE_CATCHUP_CUSTOMERS = [
         "first_name": "Late",
         "last_name": "Reference",
         "email": "late.reference@example.com",
-        "updated_at": "2026-08-29T10:10:00Z",
+        # The file arrives later, but the business-effective customer state predates order O003.
+        "updated_at": "2026-08-29T09:30:00Z",
     }
 ]
 
