@@ -30,3 +30,7 @@
 - [ADR-028: Silver quality gates and trusted invariants](ADR-028-silver-quality-gates-and-invariants.md)
 - [ADR-029: Quality telemetry and reprocessing semantics](ADR-029-quality-telemetry-and-reprocessing.md)
 - [ADR-030: Temporal dimensional consistency](ADR-030-temporal-dimensional-consistency.md)
+- [ADR-031: Platform connectivity profiles](ADR-031-platform-connectivity-profiles.md)
+- [ADR-032: Terraform state security](ADR-032-terraform-state-security.md)
+- [ADR-033: Serverless network connectivity](ADR-033-serverless-network-connectivity.md)
+- [ADR-034: AzureRM v5 migration and provider registration](ADR-034-azurerm-v5-migration.md)
