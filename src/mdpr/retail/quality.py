@@ -69,9 +69,9 @@ def quality_events(df: DataFrame, contract: Contract) -> DataFrame:
             F.lit(contract.version).cast("int").alias("contract_version"),
             "rule_id",
             F.lit("quarantine").alias("severity"),
-            _literal_map(categories)[F.col("rule_id")].alias("category"),
-            _literal_map(messages)[F.col("rule_id")].alias("message"),
-            _literal_map(expressions)[F.col("rule_id")].alias("expression"),
+            F.element_at(_literal_map(categories), F.col("rule_id")).alias("category"),
+            F.element_at(_literal_map(messages), F.col("rule_id")).alias("message"),
+            F.element_at(_literal_map(expressions), F.col("rule_id")).alias("expression"),
             record_key.alias("record_key"),
             record_fingerprint.alias("record_fingerprint"),
             source_observed_at.alias("source_observed_at"),
@@ -149,4 +149,32 @@ def metric_balance(
         .withColumn("metric_delta", F.col("source_metric") - F.col("target_metric"))
         .withColumn("tolerance", F.lit(tolerance).cast("decimal(38,6)"))
         .withColumn("is_balanced", F.abs("metric_delta") <= F.col("tolerance"))
+    )
+
+
+def processing_boundary_balance(
+    source: DataFrame,
+    target: DataFrame,
+    source_expression: str,
+    target_expression: str,
+    tolerance: float = 0.0,
+) -> DataFrame:
+    """Reconcile both row count and an additive metric across a trusted processing boundary."""
+    row_counts = source.agg(F.count("*").alias("source_rows")).crossJoin(
+        target.agg(F.count("*").alias("target_rows"))
+    )
+    metrics = metric_balance(
+        source,
+        target,
+        source_expression=source_expression,
+        target_expression=target_expression,
+        tolerance=tolerance,
+    )
+    return (
+        row_counts.crossJoin(metrics)
+        .withColumn("row_delta", F.col("source_rows") - F.col("target_rows"))
+        .withColumn("rows_balanced", F.col("row_delta") == 0)
+        .withColumn("metrics_balanced", F.col("is_balanced"))
+        .drop("is_balanced")
+        .withColumn("is_balanced", F.col("rows_balanced") & F.col("metrics_balanced"))
     )
