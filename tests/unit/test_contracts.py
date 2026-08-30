@@ -153,7 +153,7 @@ version: 1
 dataset: invalid
 keys: [id]
 fields:
-  id: {type: string, nullable: no}
+  id: {type: string, nullable: "sometimes"}
 expectations: {}
 """,
             "nullable must be boolean for field id",
