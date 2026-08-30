@@ -1,6 +1,6 @@
 import dataclasses
-from pathlib import Path
-from typing import Any
+import pathlib
+import typing
 
 import yaml
 
@@ -23,12 +23,12 @@ class Contract:
     version: int
     dataset: str
     keys: tuple[str, ...]
-    expectations: dict[str, dict[str, Any]]
-    fields: dict[str, dict[str, Any]]
-    metadata: dict[str, Any] = dataclasses.field(default_factory=dict)
+    expectations: dict[str, dict[str, typing.Any]]
+    fields: dict[str, dict[str, typing.Any]]
+    metadata: dict[str, typing.Any] = dataclasses.field(default_factory=dict)
 
 
-def _validate_expectation(name: str, rule: dict[str, Any]) -> None:
+def _validate_expectation(name: str, rule: dict[str, typing.Any]) -> None:
     severity = rule.get("severity")
     if severity not in VALID_SEVERITIES:
         raise ValueError(f"Invalid severity for {name}")
@@ -44,8 +44,8 @@ def _validate_expectation(name: str, rule: dict[str, Any]) -> None:
         raise ValueError(f"message must be a string for {name}")
 
 
-def load_contract(path: str | Path) -> Contract:
-    data: dict[str, Any] = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+def load_contract(path: str | pathlib.Path) -> Contract:
+    data: dict[str, typing.Any] = yaml.safe_load(pathlib.Path(path).read_text(encoding="utf-8"))
     required = {"version", "dataset", "keys", "expectations"}
     missing = required - data.keys()
     if missing:
@@ -92,7 +92,7 @@ def expectation_map(contract: Contract, severity: str) -> dict[str, str]:
     }
 
 
-def rule_metadata(contract: Contract, rule_name: str) -> dict[str, Any]:
+def rule_metadata(contract: Contract, rule_name: str) -> dict[str, typing.Any]:
     rule = contract.expectations[rule_name]
     return {
         "dataset": contract.dataset,
