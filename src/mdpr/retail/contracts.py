@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+import dataclasses
 from pathlib import Path
 from typing import Any
 
@@ -18,14 +18,14 @@ VALID_CATEGORIES = {
 }
 
 
-@dataclass(frozen=True)
+@dataclasses.dataclass(frozen=True)
 class Contract:
     version: int
     dataset: str
     keys: tuple[str, ...]
     expectations: dict[str, dict[str, Any]]
     fields: dict[str, dict[str, Any]]
-    metadata: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = dataclasses.field(default_factory=dict)
 
 
 def _validate_expectation(name: str, rule: dict[str, Any]) -> None:
