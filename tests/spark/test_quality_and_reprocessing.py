@@ -1,3 +1,5 @@
+from datetime import datetime
+
 import pytest
 
 pytest.importorskip("pyspark")
@@ -166,7 +168,7 @@ def test_quality_event_union_and_summary(spark):
             "quarantine",
             "business",
             "Quantity must be positive",
-            "2026-01-01 00:00:00",
+            datetime(2026, 1, 1),
         ),
     ]
     schema = (
