@@ -8,7 +8,7 @@ version = "1.6.0"
 description = "Architecture-first Databricks lakehouse reference implementation"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 dependencies = [
   "PyYAML>=6.0.2,<7",
 ]
