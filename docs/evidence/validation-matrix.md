@@ -4,7 +4,7 @@ This matrix prevents source-code capability, CI validation and real-cloud eviden
 
 | Capability | Implemented in source | Automated CI validation | Real cloud/runtime evidence |
 |---|---:|---:|---:|
-| Python transformations / contracts | Yes | Yes: Ruff, contract checks, Spark tests, >=80% coverage | Not required for pure transforms |
+| Python transformations / contracts | Yes | Yes: Ruff, contract checks, Spark tests, >=90% coverage | Not required for pure transforms |
 | Contract rule metadata / null semantics | Yes | Yes: unit + Spark tests | Lakeflow expectation metrics pending runtime evidence |
 | Silver quality gates / quarantine | Yes | Yes: Spark transformation/failure tests | Pending real Lakeflow expectation/quarantine evidence |
 | Quality telemetry / Ops model | Yes | Yes: normalized-event Spark tests + repository validation | Pending `retail_ops` pipeline execution |
