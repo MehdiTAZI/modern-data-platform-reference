@@ -34,9 +34,9 @@ run "serverless_ncc_can_be_enabled" {
   command = plan
 
   variables {
-    enable_serverless_ncc = true
-    databricks_account_id = "00000000-0000-0000-0000-000000000000"
-    workspace_id           = "1234567890123456"
+    enable_serverless_ncc              = true
+    databricks_account_id              = "00000000-0000-0000-0000-000000000000"
+    workspace_id                       = "1234567890123456"
     serverless_private_endpoint_rules = {
       lake_blob = {
         resource_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/mdpr/providers/Microsoft.Storage/storageAccounts/mdprdevlake001"
