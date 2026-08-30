@@ -51,6 +51,8 @@ jobs:
         run: terraform -chdir=infra/stacks/state-backend test
       - name: Test platform deployment profiles
         run: terraform -chdir=infra/stacks/azure-foundation test
+      - name: Test serverless NCC guardrails
+        run: terraform -chdir=infra/stacks/workspace-governance test
   secrets:
     runs-on: ubuntu-latest
     steps:
