@@ -22,6 +22,12 @@ variable "private_endpoint_subnet_id" {
   type = string
 }
 
+variable "enable_browser_authentication_endpoint" {
+  description = "Create the region-scoped browser_authentication endpoint required for private browser SSO."
+  type        = bool
+  default     = false
+}
+
 variable "tags" {
   type    = map(string)
   default = {}
