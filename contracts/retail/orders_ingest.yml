@@ -1,13 +1,43 @@
 version: 1
 dataset: orders_ingest
 keys: [event_id]
+metadata:
+  owner: retail-data-product
+  domain: retail
+  layer: silver
 expectations:
-  parseable_json: {severity: quarantine, expression: "_parse_ok = true"}
-  event_id_not_null: {severity: quarantine, expression: "event_id IS NOT NULL"}
-  order_id_not_null: {severity: quarantine, expression: "order_id IS NOT NULL"}
-  customer_id_not_null: {severity: quarantine, expression: "customer_id IS NOT NULL"}
-  product_id_not_null: {severity: quarantine, expression: "product_id IS NOT NULL"}
-  event_time_not_null: {severity: quarantine, expression: "event_time IS NOT NULL"}
+  parseable_json:
+    severity: quarantine
+    category: schema
+    expression: "_parse_ok = true"
+    message: "Order payload must be parseable JSON"
+  event_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "event_id IS NOT NULL"
+    message: "Order event key is required"
+  order_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "order_id IS NOT NULL"
+    message: "Order business key is required"
+  customer_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "customer_id IS NOT NULL"
+    message: "Order customer key is required"
+  product_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "product_id IS NOT NULL"
+    message: "Order product key is required"
+  event_time_not_null:
+    severity: quarantine
+    category: temporal
+    expression: "event_time IS NOT NULL"
+    message: "Order business event time is required"
   transport_metadata_consistent:
     severity: metric
+    category: operational
     expression: "(source = 'file' AND source_file IS NOT NULL) OR (source = 'kafka' AND topic IS NOT NULL AND partition IS NOT NULL AND offset IS NOT NULL)"
+    message: "Monitor consistency of file or Kafka transport metadata"

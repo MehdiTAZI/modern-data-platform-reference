@@ -1,4 +1,23 @@
-workspace_host = "https://adb-0000000000000000.0.azuredatabricks.net"
-environment = "dev"
-storage_account_name = "mdprdevlake001"
-access_connector_id = "/subscriptions/.../providers/Microsoft.Databricks/accessConnectors/mdpr-dev-dbc"
+workspace_host         = "https://adb-0000000000000000.0.azuredatabricks.net"
+environment            = "dev"
+storage_account_name   = "mdprdevlake001"
+access_connector_id    = "/subscriptions/.../providers/Microsoft.Databricks/accessConnectors/mdpr-dev-dbc"
+
+# Account-level serverless networking is optional. Enable it for private
+# serverless egress and provide the Databricks account/workspace identifiers.
+enable_serverless_ncc = false
+databricks_account_id = null
+workspace_id           = null
+azure_region           = "westeurope"
+
+# Example when NCC is enabled:
+# serverless_private_endpoint_rules = {
+#   lake_blob = {
+#     resource_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Storage/storageAccounts/mdprdevlake001"
+#     group_id    = "blob"
+#   }
+#   lake_dfs = {
+#     resource_id = "/subscriptions/.../resourceGroups/.../providers/Microsoft.Storage/storageAccounts/mdprdevlake001"
+#     group_id    = "dfs"
+#   }
+# }

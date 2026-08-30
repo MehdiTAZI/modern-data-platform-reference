@@ -17,3 +17,7 @@ resources:
           depends_on: [{task_key: silver}]
           pipeline_task:
             pipeline_id: ${resources.pipelines.retail_gold.id}
+        - task_key: ops
+          depends_on: [{task_key: silver}]
+          pipeline_task:
+            pipeline_id: ${resources.pipelines.retail_ops.id}

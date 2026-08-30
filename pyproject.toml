@@ -4,11 +4,11 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "modern-data-platform-reference"
-version = "1.5.0"
+version = "1.6.0"
 description = "Architecture-first Databricks lakehouse reference implementation"
 readme = "README.md"
 requires-python = ">=3.11,<3.14"
-license = {text = "Apache-2.0"}
+license = "Apache-2.0"
 dependencies = [
   "PyYAML>=6.0.2,<7",
 ]
@@ -40,10 +40,13 @@ target-version = "py311"
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "SIM"]
 
+[tool.ruff.lint.isort]
+known-third-party = ["pyspark", "yaml"]
+
 [tool.coverage.run]
 source = ["mdpr"]
 branch = true
 
 [tool.coverage.report]
 show_missing = true
-fail_under = 80
+fail_under = 90

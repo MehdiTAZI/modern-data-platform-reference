@@ -1,3 +1,5 @@
+from collections.abc import Sequence
+
 from pyspark.sql import DataFrame
 from pyspark.sql import functions as F
 
@@ -17,7 +19,7 @@ def product_dimension(products: DataFrame) -> DataFrame:
     return products.select("product_id", "name", "unit_price", "updated_at")
 
 
-def order_lines_fact(orders: DataFrame) -> DataFrame:
+def order_lines_fact(orders: DataFrame, passthrough: Sequence[str] = ()) -> DataFrame:
     return orders.select(
         "event_id",
         "order_id",
@@ -28,6 +30,7 @@ def order_lines_fact(orders: DataFrame) -> DataFrame:
         "quantity",
         "unit_price",
         (F.col("quantity") * F.col("unit_price")).alias("line_amount"),
+        *passthrough,
     )
 
 

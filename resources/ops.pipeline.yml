@@ -1,0 +1,19 @@
+resources:
+  pipelines:
+    retail_ops:
+      name: retail-${var.catalog}-ops
+      catalog: ${var.catalog}
+      schema: ops
+      serverless: true
+      root_path: ..
+      libraries:
+        - file:
+            path: ../pipelines/retail/quality_telemetry.py
+      event_log:
+        catalog: ${var.catalog}
+        schema: ops
+        name: ops_pipeline_event_log
+      configuration:
+        mdpr.catalog: ${var.catalog}
+        mdpr.contract_root: ${workspace.file_path}/contracts/retail
+        mdpr.src_root: ${workspace.file_path}/src

@@ -1,6 +1,10 @@
 version: 1
 dataset: customers
 keys: [customer_id]
+metadata:
+  owner: retail-data-product
+  domain: retail
+  layer: silver
 fields:
   customer_id: {type: string, nullable: false}
   first_name: {type: string, nullable: true}
@@ -8,7 +12,23 @@ fields:
   email: {type: string, nullable: true}
   updated_at: {type: timestamp, nullable: false}
 expectations:
-  customer_id_not_null: {severity: quarantine, expression: "customer_id IS NOT NULL"}
-  valid_email: {severity: quarantine, expression: "email RLIKE '^[^@ ]+@[^@ ]+\\.[^@ ]+$'"}
-  updated_at_not_null: {severity: quarantine, expression: "updated_at IS NOT NULL"}
-  email_population: {severity: metric, expression: "email IS NOT NULL"}
+  customer_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "customer_id IS NOT NULL"
+    message: "Customer business key is required"
+  valid_email:
+    severity: quarantine
+    category: validity
+    expression: "email RLIKE '^[^@ ]+@[^@ ]+\\.[^@ ]+$'"
+    message: "Customer email must match the accepted format"
+  updated_at_not_null:
+    severity: quarantine
+    category: temporal
+    expression: "updated_at IS NOT NULL"
+    message: "Customer change timestamp is required for deterministic state"
+  email_population:
+    severity: metric
+    category: completeness
+    expression: "email IS NOT NULL"
+    message: "Monitor customer email population"

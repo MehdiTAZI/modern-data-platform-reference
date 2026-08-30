@@ -1,7 +1,10 @@
-subscription_id       = "00000000-0000-0000-0000-000000000000"
-storage_account_name  = "mdprdevlake001"
+subscription_id          = "00000000-0000-0000-0000-000000000000"
+storage_account_name     = "mdprdevlake001"
 storage_replication_type = "ZRS"
 
-# Backend-only classic compute Private Link variant.
-# Browser/API access remains public; see docs/patterns/private-link.md.
-enable_private_link = false
+# Connectivity posture:
+# - managed: public workspace access, NAT egress, no Private Link
+# - enterprise: public workspace access + back-end Private Link
+# - isolated: public workspace access disabled + back-end and browser-auth Private Link
+# Complete serverless isolation additionally requires NCC private endpoints at account level.
+deployment_profile = "managed"
