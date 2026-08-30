@@ -139,14 +139,14 @@ def metric_balance(
 ) -> DataFrame:
     """Compare one additive business metric between two processing boundaries."""
     source_metric = source.agg(
-        F.coalesce(F.sum(F.expr(source_expression)), F.lit(0)).cast("decimal(38,6)").alias(
-            "source_metric"
-        )
+        F.coalesce(F.sum(F.expr(source_expression)), F.lit(0))
+        .cast("decimal(38,6)")
+        .alias("source_metric")
     )
     target_metric = target.agg(
-        F.coalesce(F.sum(F.expr(target_expression)), F.lit(0)).cast("decimal(38,6)").alias(
-            "target_metric"
-        )
+        F.coalesce(F.sum(F.expr(target_expression)), F.lit(0))
+        .cast("decimal(38,6)")
+        .alias("target_metric")
     )
     return (
         source_metric.crossJoin(target_metric)
