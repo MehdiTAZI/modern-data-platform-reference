@@ -78,37 +78,39 @@ def test_null_quality_expression_is_a_violation(spark):
 def test_reference_quarantine_becomes_reprocessable_when_dimension_arrives(spark):
     from pyspark.sql import functions as F
 
-    quarantined = spark.createDataFrame(
-        [
-            (
-                "E1",
-                "O1",
-                "C-late",
-                "P1",
-                1,
-                10.0,
-                "2026-01-01 12:00:00",
-                "2026-01-01 12:01:00",
-                False,
-                True,
-                ["known_customer"],
-            )
-        ],
-        [
-            "event_id",
-            "order_id",
-            "customer_id",
-            "product_id",
-            "quantity",
-            "unit_price",
-            "event_time",
-            "_ingested_at",
-            "_known_customer",
-            "_known_product",
-            "_dq_errors",
-        ],
-    ).withColumn("event_time", F.to_timestamp("event_time")).withColumn(
-        "_ingested_at", F.to_timestamp("_ingested_at")
+    quarantined = (
+        spark.createDataFrame(
+            [
+                (
+                    "E1",
+                    "O1",
+                    "C-late",
+                    "P1",
+                    1,
+                    10.0,
+                    "2026-01-01 12:00:00",
+                    "2026-01-01 12:01:00",
+                    False,
+                    True,
+                    ["known_customer"],
+                )
+            ],
+            [
+                "event_id",
+                "order_id",
+                "customer_id",
+                "product_id",
+                "quantity",
+                "unit_price",
+                "event_time",
+                "_ingested_at",
+                "_known_customer",
+                "_known_product",
+                "_dq_errors",
+            ],
+        )
+        .withColumn("event_time", F.to_timestamp("event_time"))
+        .withColumn("_ingested_at", F.to_timestamp("_ingested_at"))
     )
     customers = spark.createDataFrame([("C-late",)], ["customer_id"])
     products = spark.createDataFrame([("P1",)], ["product_id"])
@@ -125,37 +127,39 @@ def test_reference_quarantine_becomes_reprocessable_when_dimension_arrives(spark
 def test_reference_reprocessing_does_not_hide_other_business_errors(spark):
     from pyspark.sql import functions as F
 
-    quarantined = spark.createDataFrame(
-        [
-            (
-                "E1",
-                "O1",
-                "C1",
-                "P1",
-                -2,
-                10.0,
-                "2026-01-01 12:00:00",
-                "2026-01-01 12:01:00",
-                False,
-                True,
-                ["known_customer", "quantity_positive"],
-            )
-        ],
-        [
-            "event_id",
-            "order_id",
-            "customer_id",
-            "product_id",
-            "quantity",
-            "unit_price",
-            "event_time",
-            "_ingested_at",
-            "_known_customer",
-            "_known_product",
-            "_dq_errors",
-        ],
-    ).withColumn("event_time", F.to_timestamp("event_time")).withColumn(
-        "_ingested_at", F.to_timestamp("_ingested_at")
+    quarantined = (
+        spark.createDataFrame(
+            [
+                (
+                    "E1",
+                    "O1",
+                    "C1",
+                    "P1",
+                    -2,
+                    10.0,
+                    "2026-01-01 12:00:00",
+                    "2026-01-01 12:01:00",
+                    False,
+                    True,
+                    ["known_customer", "quantity_positive"],
+                )
+            ],
+            [
+                "event_id",
+                "order_id",
+                "customer_id",
+                "product_id",
+                "quantity",
+                "unit_price",
+                "event_time",
+                "_ingested_at",
+                "_known_customer",
+                "_known_product",
+                "_dq_errors",
+            ],
+        )
+        .withColumn("event_time", F.to_timestamp("event_time"))
+        .withColumn("_ingested_at", F.to_timestamp("_ingested_at"))
     )
     customers = spark.createDataFrame([("C1",)], ["customer_id"])
     products = spark.createDataFrame([("P1",)], ["product_id"])
@@ -179,19 +183,20 @@ def test_temporal_join_resolves_customer_version_at_event_time(spark):
         ],
         ["event_id", "customer_id", "event_time"],
     ).withColumn("event_time", F.to_timestamp("event_time"))
-    history = spark.createDataFrame(
-        [
-            ("C1", "2026-01-01 00:00:00", "2026-02-01 00:00:00"),
-            ("C1", "2026-02-01 00:00:00", None),
-        ],
-        ["customer_id", "__START_AT", "__END_AT"],
-    ).withColumn("__START_AT", F.to_timestamp("__START_AT")).withColumn(
-        "__END_AT", F.to_timestamp("__END_AT")
+    history = (
+        spark.createDataFrame(
+            [
+                ("C1", "2026-01-01 00:00:00", "2026-02-01 00:00:00"),
+                ("C1", "2026-02-01 00:00:00", None),
+            ],
+            ["customer_id", "__START_AT", "__END_AT"],
+        )
+        .withColumn("__START_AT", F.to_timestamp("__START_AT"))
+        .withColumn("__END_AT", F.to_timestamp("__END_AT"))
     )
 
     rows = {
-        row.event_id: row
-        for row in enrich_orders_with_customer_as_of(orders, history).collect()
+        row.event_id: row for row in enrich_orders_with_customer_as_of(orders, history).collect()
     }
 
     assert str(rows["E1"].customer_version_start) == "2026-01-01 00:00:00"
