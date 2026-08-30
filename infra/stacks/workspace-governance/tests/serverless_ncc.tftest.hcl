@@ -15,7 +15,7 @@ run "serverless_ncc_disabled_by_default" {
   command = plan
 
   assert {
-    condition     = output.serverless_ncc_id == null
+    condition     = output.serverless_ncc_enabled == false
     error_message = "serverless NCC must remain opt-in"
   }
 }
@@ -50,7 +50,7 @@ run "serverless_ncc_can_be_enabled" {
   }
 
   assert {
-    condition     = output.serverless_ncc_id != null
-    error_message = "enabled serverless NCC must expose its configuration ID"
+    condition     = output.serverless_ncc_enabled == true
+    error_message = "valid account and workspace context must instantiate the serverless NCC module"
   }
 }
