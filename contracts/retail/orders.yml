@@ -2,15 +2,63 @@ version: 1
 dataset: orders
 keys: [event_id]
 watermark: "30 minutes"
+metadata:
+  owner: retail-data-product
+  domain: retail
+  layer: silver
 expectations:
-  event_id_not_null: {severity: quarantine, expression: "event_id IS NOT NULL"}
-  order_id_not_null: {severity: quarantine, expression: "order_id IS NOT NULL"}
-  customer_id_not_null: {severity: quarantine, expression: "customer_id IS NOT NULL"}
-  product_id_not_null: {severity: quarantine, expression: "product_id IS NOT NULL"}
-  quantity_positive: {severity: quarantine, expression: "quantity > 0"}
-  price_non_negative: {severity: quarantine, expression: "unit_price >= 0"}
-  event_time_not_null: {severity: quarantine, expression: "event_time IS NOT NULL"}
-  event_time_not_far_future: {severity: quarantine, expression: "event_time <= current_timestamp() + INTERVAL 5 MINUTES"}
-  known_customer: {severity: quarantine, expression: "_known_customer = true"}
-  known_product: {severity: quarantine, expression: "_known_product = true"}
-  line_amount_below_monitoring_threshold: {severity: metric, expression: "quantity * unit_price < 10000"}
+  event_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "event_id IS NOT NULL"
+    message: "Order event key is required"
+  order_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "order_id IS NOT NULL"
+    message: "Order business key is required"
+  customer_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "customer_id IS NOT NULL"
+    message: "Order customer key is required"
+  product_id_not_null:
+    severity: quarantine
+    category: completeness
+    expression: "product_id IS NOT NULL"
+    message: "Order product key is required"
+  quantity_positive:
+    severity: quarantine
+    category: business
+    expression: "quantity > 0"
+    message: "Order quantity must be strictly positive"
+  price_non_negative:
+    severity: quarantine
+    category: business
+    expression: "unit_price >= 0"
+    message: "Order unit price cannot be negative"
+  event_time_not_null:
+    severity: quarantine
+    category: temporal
+    expression: "event_time IS NOT NULL"
+    message: "Order event time is required"
+  event_time_not_far_future:
+    severity: quarantine
+    category: temporal
+    expression: "event_time <= current_timestamp() + INTERVAL 5 MINUTES"
+    message: "Order event time cannot be materially ahead of processing time"
+  known_customer:
+    severity: quarantine
+    category: referential
+    expression: "_known_customer = true"
+    message: "Order customer must exist in trusted customer state"
+  known_product:
+    severity: quarantine
+    category: referential
+    expression: "_known_product = true"
+    message: "Order product must exist in trusted product state"
+  line_amount_below_monitoring_threshold:
+    severity: metric
+    category: operational
+    expression: "quantity * unit_price < 10000"
+    message: "Monitor unusually large order-line amounts"
