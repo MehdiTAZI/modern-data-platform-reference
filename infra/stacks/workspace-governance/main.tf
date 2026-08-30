@@ -1,9 +1,13 @@
+locals {
+  serverless_ncc_context_complete = (
+    var.databricks_account_id != null && var.databricks_account_id != "" &&
+    var.workspace_id != null && var.workspace_id != ""
+  )
+}
+
 check "serverless_ncc_inputs" {
   assert {
-    condition = !var.enable_serverless_ncc || (
-      var.databricks_account_id != null && var.databricks_account_id != "" &&
-      var.workspace_id != null && var.workspace_id != ""
-    )
+    condition     = !var.enable_serverless_ncc || local.serverless_ncc_context_complete
     error_message = "databricks_account_id and workspace_id are required when enable_serverless_ncc is true."
   }
 }
@@ -20,7 +24,7 @@ module "uc" {
 }
 
 module "serverless_ncc" {
-  count = var.enable_serverless_ncc ? 1 : 0
+  count = var.enable_serverless_ncc && local.serverless_ncc_context_complete ? 1 : 0
 
   source = "../../modules/serverless-ncc"
   providers = {
