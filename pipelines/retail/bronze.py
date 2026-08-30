@@ -10,6 +10,20 @@ SOURCE_MODE = spark.conf.get("mdpr.orders_source_mode", "files")
 KAFKA_SERVICE_CREDENTIAL = spark.conf.get("mdpr.kafka_service_credential", "")
 
 
+def _with_snapshot_metadata(df, source_system: str):
+    source_columns = list(df.columns)
+    return (
+        df.withColumn(
+            "_payload_hash",
+            F.sha2(F.to_json(F.struct(*[F.col(column) for column in source_columns])), 256),
+        )
+        .withColumn("_source_system", F.lit(source_system))
+        .withColumn("_ingested_at", F.current_timestamp())
+        .withColumn("_ingestion_date", F.current_date())
+        .withColumn("_source_file", F.input_file_name())
+    )
+
+
 @dp.table(
     name="customers_raw",
     comment="Source-faithful customer snapshots with ingestion metadata and rescued schema drift",
@@ -18,16 +32,15 @@ KAFKA_SERVICE_CREDENTIAL = spark.conf.get("mdpr.kafka_service_credential", "")
 @dp.expect("no_rescued_customer_fields", "_rescued_data IS NULL")
 def customers_raw():
     path = f"/Volumes/{CATALOG}/bronze/{LANDING}/customers"
-    return (
+    source = (
         spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "csv")
         .option("header", "true")
         .option("cloudFiles.schemaEvolutionMode", "rescue")
         .option("rescuedDataColumn", "_rescued_data")
         .load(path)
-        .withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
     )
+    return _with_snapshot_metadata(source, "customer-master")
 
 
 @dp.table(
@@ -38,16 +51,15 @@ def customers_raw():
 @dp.expect("no_rescued_product_fields", "_rescued_data IS NULL")
 def products_raw():
     path = f"/Volumes/{CATALOG}/bronze/{LANDING}/products"
-    return (
+    source = (
         spark.readStream.format("cloudFiles")
         .option("cloudFiles.format", "csv")
         .option("header", "true")
         .option("cloudFiles.schemaEvolutionMode", "rescue")
         .option("rescuedDataColumn", "_rescued_data")
         .load(path)
-        .withColumn("_ingested_at", F.current_timestamp())
-        .withColumn("_source_file", F.input_file_name())
     )
+    return _with_snapshot_metadata(source, "product-master")
 
 
 def _file_orders():
@@ -99,4 +111,9 @@ def _kafka_orders():
 @dp.expect("supported_source", "source IN ('file', 'kafka')")
 def orders_raw():
     source = _kafka_orders() if SOURCE_MODE == "kafka" else _file_orders()
-    return source.withColumn("_ingested_at", F.current_timestamp())
+    return (
+        source.withColumn("_payload_hash", F.sha2("raw_payload", 256))
+        .withColumn("_source_system", F.lit("order-service"))
+        .withColumn("_ingested_at", F.current_timestamp())
+        .withColumn("_ingestion_date", F.current_date())
+    )
