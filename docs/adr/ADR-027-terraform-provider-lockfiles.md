@@ -16,10 +16,10 @@ Provider version constraints define the compatible range, but they do not by the
 
 ## Current selections
 
-- Azure roots: `hashicorp/azurerm` **4.81.0**, constrained by `~> 4.80`.
+- Azure roots: `hashicorp/azurerm` **5.3.0**, constrained by `~> 5.3`. The v4 to v5 migration policy is documented in [ADR-034](ADR-034-azurerm-v5-migration.md).
 - Workspace governance: `databricks/databricks` **1.128.0**, constrained by `~> 1.128.0`.
 
-These versions are observations of the V1.4 lockfiles, not permanent architecture requirements.
+These versions are observations of the reviewed lockfiles, not permanent architecture requirements.
 
 ## Alternatives considered
 

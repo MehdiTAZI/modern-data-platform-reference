@@ -5,12 +5,11 @@ resource "azurerm_private_dns_zone" "databricks" {
 }
 
 resource "azurerm_private_dns_zone_virtual_network_link" "databricks" {
-  name                  = "${var.name_prefix}-databricks"
-  resource_group_name   = var.resource_group_name
-  private_dns_zone_name = azurerm_private_dns_zone.databricks.name
-  virtual_network_id    = var.vnet_id
-  registration_enabled  = false
-  tags                  = var.tags
+  name                 = "${var.name_prefix}-databricks"
+  private_dns_zone_id  = azurerm_private_dns_zone.databricks.id
+  virtual_network_id   = var.vnet_id
+  registration_enabled = false
+  tags                 = var.tags
 }
 
 resource "azurerm_private_endpoint" "workspace" {

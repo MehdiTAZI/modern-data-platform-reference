@@ -6,12 +6,25 @@ terraform {
   required_providers {
     azurerm = {
       source  = "hashicorp/azurerm"
-      version = "~> 4.80"
+      version = "~> 5.3"
     }
   }
 }
 
 provider "azurerm" {
-  features {}
+  features {
+    enhanced_validation {
+      locations          = true
+      resource_providers = true
+    }
+  }
+
   subscription_id = var.subscription_id
+
+  resource_providers_to_register = [
+    "Microsoft.Databricks",
+    "Microsoft.Network",
+    "Microsoft.OperationalInsights",
+    "Microsoft.Storage",
+  ]
 }
