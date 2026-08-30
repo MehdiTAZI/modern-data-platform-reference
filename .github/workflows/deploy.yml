@@ -132,7 +132,7 @@ jobs:
           pip install -e . build
 
       - name: Install Databricks CLI
-        uses: databricks/setup-cli@8821c27b1fe57472264eeb6e50c1f31d69552f28 # v1.10.0
+        uses: databricks/setup-cli@a0617808a1c52de06972a31670ce426578b35c7a # v1.14.0
 
       - name: Record tool versions
         shell: bash
