@@ -98,6 +98,29 @@ def order_fact_reconciliation():
     )
 
 
+@dp.materialized_view(
+    name="temporal_fact_reconciliation",
+    comment=(
+        "Accounting control proving the SCD2 as-of join neither loses nor duplicates canonical facts"
+    ),
+)
+@dp.expect_all_or_fail(
+    {
+        "temporal_row_count_reconciled": "rows_balanced = true",
+        "temporal_amount_reconciled": "metrics_balanced = true",
+        "temporal_boundary_reconciled": "is_balanced = true",
+    }
+)
+def temporal_fact_reconciliation():
+    return processing_boundary_balance(
+        spark.read.table(f"{CATALOG}.silver.orders_canonical"),
+        spark.read.table("fact_order_lines_temporal"),
+        source_expression="quantity * unit_price",
+        target_expression="line_amount",
+        tolerance=0.01,
+    )
+
+
 @dp.materialized_view(name="daily_sales", cluster_by_auto=True)
 @dp.expect_all_or_fail(
     {
