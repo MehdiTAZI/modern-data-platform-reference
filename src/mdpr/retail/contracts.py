@@ -4,7 +4,6 @@ import typing
 
 import yaml
 
-
 VALID_SEVERITIES = {"fail", "quarantine", "metric"}
 VALID_CATEGORIES = {
     "schema",
