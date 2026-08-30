@@ -101,7 +101,8 @@ def order_fact_reconciliation():
 @dp.materialized_view(
     name="temporal_fact_reconciliation",
     comment=(
-        "Accounting control proving the SCD2 as-of join neither loses nor duplicates canonical facts"
+        "Accounting control proving the SCD2 as-of join neither loses nor duplicates "
+        "canonical facts"
     ),
 )
 @dp.expect_all_or_fail(
