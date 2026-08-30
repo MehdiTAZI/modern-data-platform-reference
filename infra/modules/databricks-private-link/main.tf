@@ -32,3 +32,25 @@ resource "azurerm_private_endpoint" "workspace" {
     private_dns_zone_ids = [azurerm_private_dns_zone.databricks.id]
   }
 }
+
+resource "azurerm_private_endpoint" "browser_authentication" {
+  count = var.enable_browser_authentication_endpoint ? 1 : 0
+
+  name                = "${var.name_prefix}-dbw-browser-auth-pe"
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  subnet_id           = var.private_endpoint_subnet_id
+  tags                = var.tags
+
+  private_service_connection {
+    name                           = "${var.name_prefix}-dbw-browser-auth"
+    private_connection_resource_id = var.workspace_id
+    subresource_names              = ["browser_authentication"]
+    is_manual_connection           = false
+  }
+
+  private_dns_zone_group {
+    name                 = "databricks"
+    private_dns_zone_ids = [azurerm_private_dns_zone.databricks.id]
+  }
+}
