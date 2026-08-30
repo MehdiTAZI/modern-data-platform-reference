@@ -21,9 +21,15 @@ variable "storage_replication_type" {
   default = "ZRS"
 }
 
-variable "enable_private_link" {
-  type    = bool
-  default = false
+variable "deployment_profile" {
+  description = "Platform connectivity profile: managed, enterprise, or isolated."
+  type        = string
+  default     = "managed"
+
+  validation {
+    condition     = contains(["managed", "enterprise", "isolated"], var.deployment_profile)
+    error_message = "deployment_profile must be one of: managed, enterprise, isolated."
+  }
 }
 
 variable "private_endpoint_subnet_prefixes" {
