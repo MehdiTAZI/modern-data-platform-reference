@@ -36,9 +36,16 @@ def parse_order_envelope(df: DataFrame) -> DataFrame:
 
 
 def deduplicate_orders(df: DataFrame) -> DataFrame:
-    window = Window.partitionBy("event_id").orderBy(
-        F.col("event_time").desc_nulls_last(), F.col("_ingested_at").desc_nulls_last()
-    )
+    ordering = [
+        F.col("event_time").desc_nulls_last(),
+        F.col("_ingested_at").desc_nulls_last(),
+    ]
+    if "_payload_hash" in df.columns:
+        ordering.append(F.col("_payload_hash").desc_nulls_last())
+    elif "raw_payload" in df.columns:
+        ordering.append(F.sha2(F.col("raw_payload"), 256).desc_nulls_last())
+
+    window = Window.partitionBy("event_id").orderBy(*ordering)
     return df.withColumn("_rn", F.row_number().over(window)).filter("_rn = 1").drop("_rn")
 
 
