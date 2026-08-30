@@ -59,6 +59,51 @@ def add_reference_validity(
     )
 
 
+def revalidate_order_quarantine(
+    quarantined_orders: DataFrame, customers: DataFrame, products: DataFrame
+) -> DataFrame:
+    """Re-evaluate reference validity without mutating the original quarantined record."""
+    technical_columns = [
+        column
+        for column in ("_dq_errors", "_known_customer", "_known_product")
+        if column in quarantined_orders.columns
+    ]
+    return add_reference_validity(
+        quarantined_orders.drop(*technical_columns),
+        customers,
+        products,
+    )
+
+
+def enrich_orders_with_customer_as_of(
+    orders: DataFrame,
+    customer_history: DataFrame,
+    start_column: str = "__START_AT",
+    end_column: str = "__END_AT",
+) -> DataFrame:
+    """Join each fact event to the SCD2 customer version valid at event time."""
+    required_history = {"customer_id", start_column, end_column}
+    missing = required_history - set(customer_history.columns)
+    if missing:
+        raise ValueError(f"Customer history is missing temporal columns: {sorted(missing)}")
+
+    order = orders.alias("orders")
+    history = customer_history.alias("history")
+    condition = (
+        (F.col("orders.customer_id") == F.col("history.customer_id"))
+        & (F.col("orders.event_time") >= F.col(f"history.{start_column}"))
+        & (
+            F.col(f"history.{end_column}").isNull()
+            | (F.col("orders.event_time") < F.col(f"history.{end_column}"))
+        )
+    )
+    return order.join(history, condition, "left").select(
+        "orders.*",
+        F.col(f"history.{start_column}").alias("customer_version_start"),
+        F.col(f"history.{end_column}").alias("customer_version_end"),
+    )
+
+
 def late_reconciliation_candidates(
     raw_orders: DataFrame,
     delivered_orders: DataFrame,
