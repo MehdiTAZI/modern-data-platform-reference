@@ -28,6 +28,13 @@ def _late_checked():
         spark.read.table("orders"),
         F.expr("current_timestamp() - INTERVAL 30 MINUTES"),
     )
+    business_quarantine_ids = (
+        spark.read.table("orders_quarantine")
+        .select("event_id")
+        .filter("event_id IS NOT NULL")
+        .distinct()
+    )
+    candidates = candidates.join(business_quarantine_ids, "event_id", "left_anti")
     conformed = add_reference_validity(
         candidates,
         spark.read.table("customers"),
@@ -48,7 +55,8 @@ def _reference_reprocess_checked():
 @dp.materialized_view(
     name="orders_reconciliation_candidates",
     comment=(
-        "Valid late events absent from the low-latency streaming result after the watermark horizon"
+        "Valid late events absent from the low-latency stream and not already owned by the "
+        "business-quarantine remediation path"
     ),
 )
 def orders_reconciliation_candidates():
