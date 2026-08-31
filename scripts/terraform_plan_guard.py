@@ -65,10 +65,11 @@ def main() -> None:
     violations = evaluate_plan(plan, args.allow_address)
     if violations:
         details = "\n".join(f"- {violation}" for violation in violations)
-        raise SystemExit(
-            "Blocked destructive Terraform plan. Review the plan and explicitly allow only expected "
-            f"resource addresses:\n{details}"
+        message = (
+            "Blocked destructive Terraform plan. Review the plan and explicitly allow only "
+            f"expected resource addresses:\n{details}"
         )
+        raise SystemExit(message)
 
     print("OK: Terraform plan contains no unapproved destructive changes")
 
