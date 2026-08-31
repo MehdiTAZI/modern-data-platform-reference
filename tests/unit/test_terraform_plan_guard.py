@@ -27,9 +27,7 @@ def test_delete_is_blocked() -> None:
 
 
 def test_replacement_is_blocked() -> None:
-    violations = evaluate_plan(
-        plan_with("azurerm_databricks_workspace.this", ["delete", "create"])
-    )
+    violations = evaluate_plan(plan_with("azurerm_databricks_workspace.this", ["delete", "create"]))
     assert len(violations) == 1
     assert "azurerm_databricks_workspace.this" in violations[0]
 
