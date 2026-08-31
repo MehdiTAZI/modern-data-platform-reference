@@ -10,8 +10,16 @@ output "host_subnet_name" {
   value = azurerm_subnet.host.name
 }
 
+output "host_subnet_id" {
+  value = azurerm_subnet.host.id
+}
+
 output "container_subnet_name" {
   value = azurerm_subnet.container.name
+}
+
+output "container_subnet_id" {
+  value = azurerm_subnet.container.id
 }
 
 output "private_endpoint_subnet_id" {
