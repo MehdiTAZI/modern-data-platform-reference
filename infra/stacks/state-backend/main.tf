@@ -15,6 +15,11 @@ resource "azurerm_storage_account" "state" {
   cross_tenant_replication_enabled  = false
   infrastructure_encryption_enabled = true
 
+  network_rules {
+    default_action = "Deny"
+    bypass         = ["AzureServices"]
+  }
+
   blob_properties {
     versioning_enabled = true
 
