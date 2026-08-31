@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from scripts.terraform_plan_guard import evaluate_plan, load_plan
+from mdpr.terraform_plan_guard import evaluate_plan, load_plan
 
 
 def plan_with(address: str, actions: list[str]) -> dict:
