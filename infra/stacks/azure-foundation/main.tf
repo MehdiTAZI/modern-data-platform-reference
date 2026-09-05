@@ -47,6 +47,7 @@ module "storage" {
   location                 = var.location
   resource_group_name      = azurerm_resource_group.this.name
   account_replication_type = var.storage_replication_type
+  allowed_subnet_ids       = [module.networking.host_subnet_id, module.networking.container_subnet_id]
   tags                     = var.tags
 }
 

@@ -23,6 +23,11 @@ variable "account_replication_type" {
   }
 }
 
+variable "allowed_subnet_ids" {
+  type    = list(string)
+  default = []
+}
+
 variable "tags" {
   type    = map(string)
   default = {}

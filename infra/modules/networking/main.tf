@@ -19,6 +19,10 @@ resource "azurerm_subnet" "host" {
   virtual_network_name = azurerm_virtual_network.this.name
   address_prefixes     = [cidrsubnet(var.address_space[0], 2, 0)]
 
+  service_endpoint {
+    service = "Microsoft.Storage"
+  }
+
   delegation {
     name = "databricks"
 
@@ -38,6 +42,10 @@ resource "azurerm_subnet" "container" {
   resource_group_name  = var.resource_group_name
   virtual_network_name = azurerm_virtual_network.this.name
   address_prefixes     = [cidrsubnet(var.address_space[0], 2, 1)]
+
+  service_endpoint {
+    service = "Microsoft.Storage"
+  }
 
   delegation {
     name = "databricks"
